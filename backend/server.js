@@ -383,6 +383,8 @@ app.post('/api/files/upload', verifyToken, upload.single('file'), async (req, re
     const uploadType = req.body.uploadType || 'document';
     const description = req.body.description || '';
 
+    console.log(`Upload request: fileName=${fileName}, fileSize=${fileSize}, user=${req.userId}`);
+
     // Generate unique S3 key
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(7);
@@ -400,17 +402,25 @@ app.post('/api/files/upload', verifyToken, upload.single('file'), async (req, re
       }
     };
 
+    console.log(`S3 upload params: bucket=${S3_BUCKET}, key=${s3Key}, size=${fileSize}`);
+
     try {
+      console.log('Sending PutObjectCommand to S3...');
       await s3Client.send(new PutObjectCommand(params));
+      console.log('Successfully uploaded to S3');
+      
       const s3Url = `${S3_URL || `https://${S3_BUCKET}.s3.amazonaws.com`}/${s3Key}`;
+      console.log(`S3 URL: ${s3Url}`);
 
       try {
         // Save file metadata to database
+        console.log('Saving to database...');
         const result = await pool.query(
           'INSERT INTO files (user_id, file_name, s3_key, s3_url, file_size, file_type, upload_type, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
           [req.userId, fileName, s3Key, s3Url, fileSize, fileType, uploadType, description]
         );
 
+        console.log(`File record saved, ID: ${result.rows[0].id}`);
         res.status(201).json({
           message: 'File uploaded successfully',
           file: {
@@ -425,7 +435,7 @@ app.post('/api/files/upload', verifyToken, upload.single('file'), async (req, re
         });
       } catch (dbErr) {
         console.error('Database error:', dbErr);
-        res.status(500).json({ error: 'File uploaded to S3 but failed to save metadata', s3Url });
+        res.status(500).json({ error: 'File uploaded to S3 but failed to save metadata', details: dbErr.message, s3Url });
       }
     } catch (err) {
       console.error('S3 upload error:', err);
@@ -475,6 +485,7 @@ app.get('/api/files/:id', verifyToken, async (req, res) => {
 app.delete('/api/files/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`Delete request for file ID: ${id}, user: ${req.userId}`);
 
     // Get file info
     const fileResult = await pool.query(
@@ -483,10 +494,12 @@ app.delete('/api/files/:id', verifyToken, async (req, res) => {
     );
 
     if (fileResult.rows.length === 0) {
+      console.log(`File not found: ID ${id} for user ${req.userId}`);
       return res.status(404).json({ error: 'File not found' });
     }
 
     const s3Key = fileResult.rows[0].s3_key;
+    console.log(`Found S3 key: ${s3Key}`);
 
     try {
       // Delete from S3
@@ -495,23 +508,26 @@ app.delete('/api/files/:id', verifyToken, async (req, res) => {
         Key: s3Key
       };
 
+      console.log(`Deleting from S3: bucket=${S3_BUCKET}, key=${s3Key}`);
       await s3Client.send(new DeleteObjectCommand(s3Params));
+      console.log('Successfully deleted from S3');
 
       try {
         // Delete from database
-        await pool.query('DELETE FROM files WHERE id = $1 AND user_id = $2', [id, req.userId]);
+        const deleteResult = await pool.query('DELETE FROM files WHERE id = $1 AND user_id = $2', [id, req.userId]);
+        console.log(`Database deletion result: ${deleteResult.rowCount} rows deleted`);
         res.json({ message: 'File deleted successfully' });
       } catch (dbErr) {
         console.error('Database error:', dbErr);
-        res.status(500).json({ error: 'Failed to delete file record from database' });
+        res.status(500).json({ error: 'Failed to delete file record from database', details: dbErr.message });
       }
     } catch (err) {
       console.error('S3 delete error:', err);
-      return res.status(500).json({ error: 'Failed to delete file from S3' });
+      return res.status(500).json({ error: 'Failed to delete file from S3', details: err.message });
     }
   } catch (err) {
     console.error('Delete error:', err);
-    res.status(500).json({ error: 'File deletion failed' });
+    res.status(500).json({ error: 'File deletion failed', details: err.message });
   }
 });
 
