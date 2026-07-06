@@ -270,7 +270,7 @@ function handleSignup(e) {
     signupBtn.innerHTML = '<svg style="width:16px;height:16px;animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> Creating Account...';
     
     // Call backend API
-    const apiUrl = localStorage.getItem('API_URL') || 'http://localhost:5000';
+    const apiUrl = localStorage.getItem('API_URL') || 'https://ehs-development.onrender.com';
     
     fetch(`${apiUrl}/api/register`, {
         method: 'POST',
