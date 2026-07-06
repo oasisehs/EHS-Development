@@ -2,7 +2,10 @@
 // FILE UPLOAD MANAGER
 // ==========================================
 
-const API_URL = 'https://ehs-development.onrender.com';
+// Detect backend URL: use localhost for local dev, Render for production
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : 'https://ehs-development.onrender.com';
 const TOKEN = localStorage.getItem('ehssuite_token');
 
 document.addEventListener('DOMContentLoaded', function() {
