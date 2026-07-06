@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ehs-suite-api
+    env: node
+    plan: free
+    root_dir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_S3_BUCKET
+        value: oasis-ehs-bucket
+      - key: AWS_S3_URL
+        value: https://oasis-ehs-bucket.s3.amazonaws.com
+      # Add these sensitive values in Render dashboard:
+      # - DATABASE_URL (from Environment tab)
+      # - JWT_SECRET (from Environment tab)
+      # - AWS_ACCESS_KEY_ID (from Environment tab)
+      # - AWS_SECRET_ACCESS_KEY (from Environment tab)
