@@ -2,6 +2,8 @@
 // SIGNUP FORM HANDLING & VALIDATION
 // ==========================================
 
+const API_BASE_URL = 'https://ehs-development.onrender.com';
+
 document.addEventListener('DOMContentLoaded', function() {
     const signupForm = document.getElementById('signupForm');
     
@@ -270,7 +272,7 @@ function handleSignup(e) {
     signupBtn.innerHTML = '<svg style="width:16px;height:16px;animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> Creating Account...';
     
     // Call backend API
-    const apiUrl = localStorage.getItem('API_URL') || 'https://ehs-development.onrender.com';
+    const apiUrl = API_BASE_URL;
     
     fetch(`${apiUrl}/api/register`, {
         method: 'POST',

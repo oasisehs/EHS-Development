@@ -3,7 +3,8 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const aws = require('aws-sdk');
+const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -14,13 +15,14 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';
 
 // ===== AWS S3 CONFIGURATION =====
-aws.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION || 'us-east-1'
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
 });
 
-const s3 = new aws.S3();
 const S3_BUCKET = process.env.AWS_S3_BUCKET;
 const S3_URL = process.env.AWS_S3_URL;
 
@@ -398,15 +400,12 @@ app.post('/api/files/upload', verifyToken, upload.single('file'), async (req, re
       }
     };
 
-    s3.upload(params, async (err, data) => {
-      if (err) {
-        console.error('S3 upload error:', err);
-        return res.status(500).json({ error: 'Failed to upload file to S3', details: err.message });
-      }
+    try {
+      await s3Client.send(new PutObjectCommand(params));
+      const s3Url = `${S3_URL || `https://${S3_BUCKET}.s3.amazonaws.com`}/${s3Key}`;
 
       try {
         // Save file metadata to database
-        const s3Url = data.Location;
         const result = await pool.query(
           'INSERT INTO files (user_id, file_name, s3_key, s3_url, file_size, file_type, upload_type, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
           [req.userId, fileName, s3Key, s3Url, fileSize, fileType, uploadType, description]
@@ -426,9 +425,12 @@ app.post('/api/files/upload', verifyToken, upload.single('file'), async (req, re
         });
       } catch (dbErr) {
         console.error('Database error:', dbErr);
-        res.status(500).json({ error: 'File uploaded to S3 but failed to save metadata', s3Url: data.Location });
+        res.status(500).json({ error: 'File uploaded to S3 but failed to save metadata', s3Url });
       }
-    });
+    } catch (err) {
+      console.error('S3 upload error:', err);
+      return res.status(500).json({ error: 'Failed to upload file to S3', details: err.message });
+    }
   } catch (err) {
     console.error('Upload error:', err);
     res.status(500).json({ error: 'File upload failed', details: err.message });
@@ -486,17 +488,14 @@ app.delete('/api/files/:id', verifyToken, async (req, res) => {
 
     const s3Key = fileResult.rows[0].s3_key;
 
-    // Delete from S3
-    const s3Params = {
-      Bucket: S3_BUCKET,
-      Key: s3Key
-    };
+    try {
+      // Delete from S3
+      const s3Params = {
+        Bucket: S3_BUCKET,
+        Key: s3Key
+      };
 
-    s3.deleteObject(s3Params, async (err) => {
-      if (err) {
-        console.error('S3 delete error:', err);
-        return res.status(500).json({ error: 'Failed to delete file from S3' });
-      }
+      await s3Client.send(new DeleteObjectCommand(s3Params));
 
       try {
         // Delete from database
@@ -506,7 +505,10 @@ app.delete('/api/files/:id', verifyToken, async (req, res) => {
         console.error('Database error:', dbErr);
         res.status(500).json({ error: 'Failed to delete file record from database' });
       }
-    });
+    } catch (err) {
+      console.error('S3 delete error:', err);
+      return res.status(500).json({ error: 'Failed to delete file from S3' });
+    }
   } catch (err) {
     console.error('Delete error:', err);
     res.status(500).json({ error: 'File deletion failed' });
@@ -530,18 +532,23 @@ app.get('/api/files/:id/presigned-url', verifyToken, async (req, res) => {
 
     const s3Key = fileResult.rows[0].s3_key;
 
-    const params = {
-      Bucket: S3_BUCKET,
-      Key: s3Key,
-      Expires: expirySeconds
-    };
+    try {
+      const params = {
+        Bucket: S3_BUCKET,
+        Key: s3Key
+      };
 
-    const presignedUrl = s3.getSignedUrl('getObject', params);
+      const command = new GetObjectCommand(params);
+      const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: expirySeconds });
 
-    res.json({
-      presignedUrl,
-      expiresIn: expirySeconds
-    });
+      res.json({
+        presignedUrl,
+        expiresIn: expirySeconds
+      });
+    } catch (signErr) {
+      console.error('Presigned URL generation error:', signErr);
+      throw signErr;
+    }
   } catch (err) {
     console.error('Pre-signed URL error:', err);
     res.status(500).json({ error: 'Failed to generate pre-signed URL' });
@@ -555,7 +562,7 @@ app.get('/api/health', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`EHS Suite Backend is running on http://localhost:${PORT}`);
+  console.log(`EHS Suite Backend is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

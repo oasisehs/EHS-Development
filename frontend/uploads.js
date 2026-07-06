@@ -2,7 +2,7 @@
 // FILE UPLOAD MANAGER
 // ==========================================
 
-const API_URL = localStorage.getItem('API_URL') || 'https://ehs-development.onrender.com';
+const API_URL = 'https://ehs-development.onrender.com';
 const TOKEN = localStorage.getItem('ehssuite_token');
 
 document.addEventListener('DOMContentLoaded', function() {
