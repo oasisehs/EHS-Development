@@ -1,0 +1,8 @@
+{
+  "appId": "com.oasisehs.app",
+  "appName": "oasis-ehs",
+  "webDir": "www",
+  "server": {
+    "url": "https://ehs-development.onrender.com"
+  }
+}

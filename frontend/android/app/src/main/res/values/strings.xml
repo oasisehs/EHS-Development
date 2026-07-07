@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">oasis-ehs</string>
+    <string name="title_activity_main">oasis-ehs</string>
+    <string name="package_name">com.oasisehs.app</string>
+    <string name="custom_url_scheme">com.oasisehs.app</string>
+</resources>

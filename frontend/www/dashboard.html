@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EHSSuite - Compliance Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='%231e5a96'/></svg>">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 7v5m0 4v0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <div class="logo-text">
+                        <h1>EHSSuite</h1>
+                        <p>EHS Platform</p>
+                    </div>
+                </div>
+                <button class="close-sidebar" onclick="toggleSidebar()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <!-- Overview Section -->
+                <div class="nav-section">
+                    <p class="nav-label">Overview</p>
+                    <a href="#" class="nav-link active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12h18M3 6h18M3 18h18"/>
+                        </svg>
+                        <span>My Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8z"/>
+                        </svg>
+                        <span>Compliance Dashboard</span>
+                    </a>
+                </div>
+                
+                <!-- Daily Operations -->
+                <div class="nav-section">
+                    <p class="nav-label">Daily Operations</p>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <span>PTW / SSRA Submission</span>
+                        <span class="badge">3</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>Incident Reports</span>
+                        <span class="badge">5</span>
+                    </a>
+                </div>
+                
+                <!-- Compliance -->
+                <div class="nav-section">
+                    <p class="nav-label">Compliance</p>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                        </svg>
+                        <span>Certificate Repository</span>
+                        <span class="badge">8</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                        </svg>
+                        <span>Deployment Readiness</span>
+                    </a>
+                </div>
+                
+                <!-- Assets -->
+                <div class="nav-section">
+                    <p class="nav-label">Assets</p>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7v6h6V7H3z"/>
+                        </svg>
+                        <span>PPE & Equipment</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                        </svg>
+                        <span>Calibration Tracker</span>
+                        <span class="badge">2</span>
+                    </a>
+                </div>
+                
+                <!-- Performance -->
+                <div class="nav-section">
+                    <p class="nav-label">Performance</p>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 000 7H6"/>
+                        </svg>
+                        <span>EHS Scorecard</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                        </svg>
+                        <span>Document Repository</span>
+                    </a>
+                </div>
+                
+                <!-- HR & Admin -->
+                <div class="nav-section">
+                    <p class="nav-label">HR & Admin</p>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                        </svg>
+                        <span>Training & Assessment</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                        </svg>
+                        <span>Employee Management</span>
+                    </a>
+                </div>
+                
+                <!-- System -->
+                <div class="nav-section">
+                    <p class="nav-label">System</p>
+                    <a href="uploads.html" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <span>File Manager</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                        </svg>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </nav>
+            
+            <!-- User Profile -->
+            <div class="sidebar-footer">
+                <div class="user-profile" onclick="toggleUserMenu()">
+                    <div class="user-avatar">AK</div>
+                    <div class="user-info">
+                        <p class="user-name">Ahmed Khalid</p>
+                        <p class="user-role">EHS In-charge</p>
+                    </div>
+                    <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="user-menu" id="userMenu" style="display:none;">
+                    <a href="#" class="menu-item">Profile</a>
+                    <a href="#" class="menu-item">Settings</a>
+                    <a href="#" class="menu-item">Help</a>
+                    <hr style="margin:8px 0;border:none;border-top:1px solid var(--border-color);">
+                    <a href="index.html" class="menu-item logout">Logout</a>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                
+                <div class="header-right">
+                    <button class="notification-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <div class="user-profile-header" onclick="toggleUserMenu()">
+                        <div class="user-avatar-small">AK</div>
+                        <span>Ahmed Khalid</span>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <div class="content-header">
+                    <h2>Welcome back, Ahmed Khalid</h2>
+                    <p class="date-display" id="dateDisplay"></p>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-body">
+                            <p class="stat-label">PTW/SSRA Compliance</p>
+                            <h3 class="stat-value">87.3%</h3>
+                            <p class="stat-detail">41 of 47 employees submitted</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-body">
+                            <p class="stat-label">Incident Reports</p>
+                            <h3 class="stat-value">5</h3>
+                            <p class="stat-detail">Pending Review</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">📜</div>
+                        <div class="stat-body">
+                            <p class="stat-label">Certificates</p>
+                            <h3 class="stat-value">8</h3>
+                            <p class="stat-detail">Expiring Soon</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-body">
+                            <p class="stat-label">Equipment Status</p>
+                            <h3 class="stat-value">2</h3>
+                            <p class="stat-detail">Calibration Due</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main Cards -->
+                <div class="cards-grid">
+                    <!-- Compliance Card -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Today's PTW / SSRA Compliance</h3>
+                            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <div class="progress-section">
+                                <div class="progress-stat">
+                                    <span class="progress-value">87.3%</span>
+                                    <span class="progress-text">41 of 47 active employees submitted</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 87.3%;"></div>
+                                </div>
+                                <div class="progress-info">
+                                    <span>6 missing uploads</span>
+                                    <span class="target">Target: 100%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-row">
+                                <div class="comparison-item">
+                                    <span class="comparison-value">4.2%</span>
+                                    <span class="comparison-label">vs yesterday</span>
+                                </div>
+                                <div class="comparison-item">
+                                    <span class="comparison-value">6</span>
+                                    <span class="comparison-label">employees on leave</span>
+                                </div>
+                            </div>
+                            
+                            <div class="breakdown">
+                                <div class="breakdown-item">
+                                    <span class="breakdown-count">38</span>
+                                    <span class="breakdown-label">Both Uploaded</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="breakdown-count">3</span>
+                                    <span class="breakdown-label">PTW Only</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="breakdown-count">6</span>
+                                    <span class="breakdown-label">No Upload</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Alerts Card -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Status Alerts</h3>
+                            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <div class="alert alert-warning">
+                                <span class="alert-badge">⚠️</span>
+                                <div class="alert-text">
+                                    <p class="alert-title">Certificates Expiring</p>
+                                    <p class="alert-desc">8 employee certificates expiring within 15 days</p>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <span class="alert-badge">ℹ️</span>
+                                <div class="alert-text">
+                                    <p class="alert-title">Deployment Eligible</p>
+                                    <p class="alert-desc">12 employees are now eligible for deployment</p>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <span class="alert-badge">✓</span>
+                                <div class="alert-text">
+                                    <p class="alert-title">Monthly Target Reached</p>
+                                    <p class="alert-desc">July training target exceeded by 15%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Items -->
+                <div class="action-section">
+                    <h3>Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Create PTW/SSRA
+                        </button>
+                        <button class="action-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                            </svg>
+                            Report Incident
+                        </button>
+                        <button class="action-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11l3 3L22 4"/>
+                            </svg>
+                            View Certificates
+                        </button>
+                        <button class="action-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                            </svg>
+                            Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="dashboard.js"></script>
+</body>
+</html>
