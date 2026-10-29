@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHS Suite - Document Portal</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+        .screen-wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .screen-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .screen-header h1 { margin: 0; font-size: 28px; color: var(--primary-dark); }
+        .chip-link { text-decoration: none; color: var(--primary-dark); border: 1px solid var(--border-color); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+        .panel { background: #fff; border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-sm); padding: 14px; margin-bottom: 14px; }
+        .controls { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; }
+        .controls input, .controls select { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; font-size: 14px; width: 100%; }
+        .controls button { border: none; background: var(--primary-dark); color: #fff; border-radius: 8px; padding: 10px 12px; cursor: pointer; font-weight: 600; }
+        .cta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .cta-row a { text-decoration: none; border: 1px solid var(--border-color); color: var(--text-dark); border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; border-bottom: 1px solid var(--border-color); padding: 10px 8px; font-size: 13px; }
+        th { font-size: 12px; text-transform: uppercase; color: var(--text-light); }
+        .doc-badge { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .doc-badge.document { background: #dbeafe; color: #1e40af; }
+        .doc-badge.compliance { background: #fff7ed; color: #9a3412; }
+        .doc-badge.report { background: #ecfdf5; color: #065f46; }
+        .doc-badge.image { background: #f3e8ff; color: #6b21a8; }
+        .doc-badge.other { background: #f1f5f9; color: #334155; }
+        .table-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .table-actions button { border: 1px solid var(--border-color); background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: 600; }
+        @media (max-width: 920px) {
+            .controls { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-wrap">
+        <div class="screen-header">
+            <div>
+                <h1>Document Management Portal</h1>
+                <p>Search, filter, and manage uploaded compliance documents.</p>
+            </div>
+            <div>
+                <a class="chip-link" href="dashboard.html">Back to Dashboard</a>
+                <a class="chip-link" href="uploads.html">Open Upload Manager</a>
+            </div>
+        </div>
+
+        <section class="panel">
+            <div class="controls">
+                <input id="docSearch" placeholder="Search document name" />
+                <select id="docTypeFilter" title="Document type filter">
+                    <option value="">All Types</option>
+                    <option value="document">document</option>
+                    <option value="compliance">compliance</option>
+                    <option value="report">report</option>
+                    <option value="image">image</option>
+                </select>
+                <button id="applyDocFiltersBtn" type="button">Apply</button>
+            </div>
+            <div class="cta-row">
+                <a href="uploads.html">Upload New Document</a>
+                <a href="assets.html">Asset Certificates</a>
+                <a href="incidents.html">Incident Reports</a>
+            </div>
+        </section>
+
+        <section class="panel">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Uploaded</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="documentsBody"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script src="documents.js"></script>
+</body>
+</html>

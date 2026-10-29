@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHS Suite - Training Portal</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+        .screen-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .screen-header h1 {
+            font-size: 28px;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+        .chip-link {
+            text-decoration: none;
+            color: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            background: #fff;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+            padding: 16px;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin: 0 0 12px;
+            color: var(--text-dark);
+        }
+        .panel {
+            grid-column: span 6;
+        }
+        .full {
+            grid-column: span 12;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        input, select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            width: 100%;
+        }
+        button {
+            border: none;
+            background: var(--primary-dark);
+            color: #fff;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 180px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-light);
+        }
+        @media (max-width: 1024px) {
+            .panel { grid-column: span 12; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-wrap">
+        <div class="screen-header">
+            <div>
+                <h1>Training Portal</h1>
+                <p>Assign and review training progress by employee.</p>
+            </div>
+            <div>
+                <a class="chip-link" href="dashboard.html">Back to Dashboard</a>
+                <a class="chip-link" href="operations.html">Operations Console</a>
+            </div>
+        </div>
+
+        <div class="grid">
+            <section class="card panel">
+                <h2>Assign Training</h2>
+                <div class="form-row">
+                    <input id="employeeId" type="number" placeholder="Employee ID" />
+                    <input id="courseId" type="number" placeholder="Course ID" />
+                </div>
+                <div class="form-row">
+                    <select id="trainingStatus" title="Training status">
+                        <option value="not_started">Not Started</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <input id="trainingScore" type="number" min="0" max="100" placeholder="Final Score" />
+                </div>
+                <button id="assignTrainingBtn">Save Training Record</button>
+            </section>
+
+            <section class="card panel">
+                <h2>View Employee Training</h2>
+                <div class="form-row">
+                    <input id="lookupEmployeeId" type="number" placeholder="Employee ID" />
+                    <button id="viewTrainingBtn">Load Training History</button>
+                </div>
+                <pre id="trainingOutput"></pre>
+            </section>
+
+            <section class="card full">
+                <h2>Training Snapshot</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Course ID</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                            <th>Completed Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainingTable"></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <script src="training.js"></script>
+</body>
+</html>

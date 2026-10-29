@@ -405,6 +405,10 @@ body {
     transform: translateX(2px);
 }
 
+.icon-eye-off {
+    display: none;
+}
+
 /* ==========================================
    ALERTS & MESSAGES
    ========================================== */
@@ -415,7 +419,7 @@ body {
     border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
-    display: flex;
+    display: none;
     align-items: center;
     gap: 8px;
     animation: slideDown 0.3s ease;

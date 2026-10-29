@@ -3,9 +3,11 @@
 // ==========================================
 
 // Detect backend URL: use localhost for local dev, Render for production
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:5000'
-  : 'https://ehs-development.onrender.com';
+const API_BASE_URL = window.__API_BASE_URL
+    || localStorage.getItem('ehs_api_base_url')
+    || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000'
+        : window.location.origin);
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -188,23 +190,10 @@ function handleLogin(e) {
     })
     .catch(error => {
         console.error('Login error:', error);
-        // Fallback to demo account if backend is not available
-        const isDemoAccount = (email === 'demo@ehssuite.com' || email === 'demo') && password === 'Demo@123456';
-        if (isDemoAccount) {
-            showSuccessMessage('Login successful! Redirecting...');
-            localStorage.setItem('ehssuite_user', email);
-            if (rememberMe) {
-                localStorage.setItem('ehssuite_remember', 'true');
-            }
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 2000);
-        } else {
-            showErrorMessage('Connection error. Make sure the backend server is running on ' + apiUrl);
-            loginBtn.disabled = false;
-            loginBtn.classList.remove('loading');
-            loginBtn.innerHTML = originalText;
-        }
+        showErrorMessage('Connection error. Make sure the backend server is running on ' + apiUrl);
+        loginBtn.disabled = false;
+        loginBtn.classList.remove('loading');
+        loginBtn.innerHTML = originalText;
     });
 }
 

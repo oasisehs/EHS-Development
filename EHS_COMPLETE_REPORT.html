@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EHS Suite - Complete End-to-End Project Report</title>
+  <style>
+    :root {
+      --navy: #0f172a;
+      --navy-2: #1e293b;
+      --blue: #1d4ed8;
+      --green: #15803d;
+      --amber: #d97706;
+      --red: #b91c1c;
+      --gray-1: #f8fafc;
+      --gray-2: #e2e8f0;
+      --gray-3: #94a3b8;
+      --text: #0f172a;
+      --white: #ffffff;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+      color: var(--white);
+      border-radius: 18px;
+      padding: 28px 28px 20px;
+      box-shadow: var(--shadow);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 2.4rem;
+    }
+    .hero p {
+      margin: 6px 0;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 999px;
+      padding: 7px 12px;
+      margin: 10px 10px 0 0;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .section {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 24px 24px 18px;
+      margin-top: 24px;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: var(--navy-2);
+      border-bottom: 3px solid var(--gray-2);
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+    }
+    h3 {
+      color: var(--navy);
+      margin: 18px 0 10px;
+      font-size: 1.15rem;
+    }
+    p, li {
+      line-height: 1.7;
+      font-size: 0.98rem;
+    }
+    ul {
+      margin: 8px 0 16px 22px;
+      padding: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-top: 14px;
+    }
+    .card {
+      background: var(--gray-1);
+      border: 1px solid var(--gray-2);
+      border-radius: 12px;
+      padding: 18px 16px;
+    }
+    .card h4 {
+      margin: 0 0 8px;
+      color: var(--navy);
+      font-size: 1.05rem;
+    }
+    .status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .done { background: #dcfce7; color: var(--green); }
+    .partial { background: #fef3c7; color: var(--amber); }
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid var(--gray-2);
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      color: var(--navy);
+    }
+    .kpi {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .kpi > div {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      flex: 1 1 180px;
+      min-width: 180px;
+      padding: 16px;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 1.8rem;
+      color: var(--blue);
+    }
+    .badge {
+      display: inline-block;
+      background: #ecfeff;
+      color: #0f766e;
+      border: 1px solid #a5f3fc;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    a { color: var(--blue); }
+    @media (max-width: 700px) {
+      .hero h1 { font-size: 1.8rem; }
+      .section { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>EHS Suite Complete End-to-End Project Report</h1>
+      <p>End-to-end occupational health, safety, compliance, training, incident, permit, asset, document, and HR management platform.</p>
+      <div>
+        <span class="tag">Status: Completed</span>
+        <span class="tag">Framework: Node.js + Express + PostgreSQL</span>
+        <span class="tag">Frontend: Static HTML/JS/CSS</span>
+        <span class="tag">Testing: Playwright E2E</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>1. Executive Summary</h2>
+      <p>The EHS Suite project has been implemented as a working end-to-end application that supports employee authentication, dashboard operations, compliance and training management, incident and permit workflows, asset tracking, document storage, onboarding, HR workflows, and admin reporting. The solution follows a pragmatic modular architecture with a single Express backend, PostgreSQL persistence, static frontend pages, JWT-secured API access, and OpenAPI documentation.</p>
+      <p>The delivered system supports real business operations for safety and compliance management with a strong focus on employee lifecycle, training readiness, audit visibility, incident handling, and role-based control. The app was validated against a live backend and browser-based E2E testing, with the final Playwright verification showing <strong>49 passed, 0 failed</strong>.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. Scope and Business Requirements Delivered</h2>
+      <div class="grid">
+        <div class="card">
+          <h4>Core Business Needs</h4>
+          <ul>
+            <li>User login, registration, password reset</li>
+            <li>Role-based access for admin, manager, employee</li>
+            <li>Employee onboarding and lifecycle records</li>
+            <li>Training and compliance tracking</li>
+            <li>Permit to work and safety approvals</li>
+            <li>Incident logging and resolution tracking</li>
+            <li>Asset, certification, and certificate expiry tracking</li>
+            <li>Document upload and retrieval</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Operational Requirements</h4>
+          <ul>
+            <li>Audit trail for administrative actions</li>
+            <li>Dashboard summaries and KPI reporting</li>
+            <li>HR leave, attendance, and payroll views</li>
+            <li>Admin settings and summary management</li>
+            <li>Readable API contract documentation</li>
+            <li>Structured error responses</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Business Outcome</h4>
+          <ul>
+            <li>Single workspace for EHS compliance management</li>
+            <li>System supports governance and operational checks</li>
+            <li>Data-driven safety and compliance decisions</li>
+            <li>Traceability for employee, incident, and training status</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>3. Framework and Technology Stack</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Application Runtime</td>
+            <td>Node.js, Express.js</td>
+            <td>REST API, request handling, security, static asset hosting</td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>PostgreSQL</td>
+            <td>Persistent business data, auth state, employee records, incidents, permits, HR data</td>
+          </tr>
+          <tr>
+            <td>Frontend</td>
+            <td>HTML, CSS, JavaScript</td>
+            <td>Static screens for web app UX and business modules</td>
+          </tr>
+          <tr>
+            <td>Security</td>
+            <td>JWT, bcryptjs, CORS, Helmet</td>
+            <td>Authentication, password hashing, request protection, header hardening</td>
+          </tr>
+          <tr>
+            <td>File Handling</td>
+            <td>multer, AWS S3/MinIO-compatible patterns</td>
+            <td>Upload and document management support</td>
+          </tr>
+          <tr>
+            <td>API Docs</td>
+            <td>Swagger UI + OpenAPI 3.0</td>
+            <td>Interactive API documentation and contract review</td>
+          </tr>
+          <tr>
+            <td>Automation</td>
+            <td>Playwright</td>
+            <td>Browser E2E validation and functional regression testing</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>4. Architecture</h2>
+      <p>The solution follows a modular monolith design rather than a distributed service architecture. This is appropriate for the current project maturity and keeps deployment simpler while preserving service segmentation by domain.</p>
+      <div class="grid">
+        <div class="card">
+          <h4>Application Architecture</h4>
+          <ul>
+            <li>Single Express API server</li>
+            <li>Shared PostgreSQL data source</li>
+            <li>Static frontend pages served directly by the backend</li>
+            <li>Domain modules separated by route groups but sharing one runtime</li>
+            <li>JWT auth with role checks on protected routes</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Module Boundaries</h4>
+          <ul>
+            <li>Auth and user management</li>
+            <li>Employees and departments</li>
+            <li>Training and compliance</li>
+            <li>Permits and incident controls</li>
+            <li>Assets, HR, and reporting</li>
+            <li>Admin and audit surfaces</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Runtime Pattern</h4>
+          <ul>
+            <li>HTTP request enters Express</li>
+            <li>JWT validation / authorization middleware</li>
+            <li>Business logic executes against PostgreSQL</li>
+            <li>Structured JSON responses returned</li>
+            <li>Swagger UI exposes contract at /api/docs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>5. Software Components Delivered</h2>
+      <div class="grid">
+        <div class="card">
+          <h4>Backend Components</h4>
+          <ul>
+            <li>Authentication routes</li>
+            <li>Employee, department, and admin APIs</li>
+            <li>Training/compliance management</li>
+            <li>Permit/PTW work flow APIs</li>
+            <li>Incident and reporting APIs</li>
+            <li>File upload and document APIs</li>
+            <li>Audit logging and health checks</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Database Components</h4>
+          <ul>
+            <li>Users and roles</li>
+            <li>Employees and departments</li>
+            <li>Training and compliance records</li>
+            <li>Incidents and permits</li>
+            <li>Assets and certificates</li>
+            <li>Leave, attendance, payroll</li>
+            <li>System settings and audit logs</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Frontend Components</h4>
+          <ul>
+            <li>Login and signup</li>
+            <li>Forgot password flow</li>
+            <li>Dashboard screen</li>
+            <li>Operations and HR pages</li>
+            <li>Assets, onboarding, documents, incidents</li>
+            <li>Training and compliance UIs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>6. Completed Functional Modules</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Completed Features</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Authentication</td>
+            <td>Register, login, reset, JWT handling, role-based access, remember-me</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Employee Management</td>
+            <td>Create, list, update, deactivate, search, department linkage, employee compliance/training views</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Onboarding</td>
+            <td>Checklist handling, step completion, onboarding status tracking</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Training & Compliance</td>
+            <td>Enrollment, status tracking, completion, compliance summary and record updates</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Permits / PTW / SSRA</td>
+            <td>Create, view, update, approve/reject permit records</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Incidents</td>
+            <td>Incident creation, update, resolution, summaries, severity tracking</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Assets</td>
+            <td>Asset creation, lookup, archive, validation, duplicate handling</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Documents</td>
+            <td>File upload, file details, deletion, pre-signed URL retrieval</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Dashboard & KPI</td>
+            <td>Summary cards, compliance data, incidents data, KPI records, certificates data</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>HR & Payroll</td>
+            <td>Leave request handling, attendance, payroll process view</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Admin</td>
+            <td>Audit logs, admin summary, settings, user listing</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+          <tr>
+            <td>API Documentation</td>
+            <td>Swagger OpenAPI with live docs and JSON export</td>
+            <td><span class="status done">Completed</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>7. Development Approach Followed</h2>
+      <ul>
+        <li>Started with end-to-end requirement capture and business process mapping.</li>
+        <li>Implemented the backend first with APIs and persistence model.</li>
+        <li>Designed the database schema around real EHS domain entities and roles.</li>
+        <li>Built the frontend flows to match the backend contracts and real user journeys.</li>
+        <li>Aligned seeded data and demo credentials to validation flows.</li>
+        <li>Added Swagger documentation and API contract visibility.</li>
+        <li>Validated app behavior through live browser testing.</li>
+      </ul>
+      <p><strong>Development pattern:</strong> modular monolith with domain-specific route groups, shared runtime, centralized schema and security, and JSON-based API responses.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. Test Cases and Quality Validation</h2>
+      <div class="kpi">
+        <div><strong>49</strong>Playwright E2E tests passed</div>
+        <div><strong>0</strong>Failed tests</div>
+        <div><strong>55</strong>Swagger paths in generated spec</div>
+      </div>
+
+      <h3>Covered test categories</h3>
+      <ul>
+        <li>Authentication: login, signup, forgot password, validation, logout</li>
+        <li>Authorization and access control</li>
+        <li>Operations console rendering and navigation</li>
+        <li>Employee lifecycle and department listing</li>
+        <li>Training and compliance screens</li>
+        <li>Onboarding flow</li>
+        <li>Asset management create and view flows</li>
+        <li>Incident hub screen validation</li>
+        <li>Documents portal validation</li>
+        <li>API error contract validation for missing fields, invalid IDs, 401s, 404s, and 409 conflicts</li>
+      </ul>
+
+      <p>Fresh verification evidence used for this report:</p>
+      <ul>
+        <li>Playwright run: <strong>49 passed (40.8s)</strong></li>
+        <li>Live Swagger fetch returned: <strong>OpenAPI 3.0.3</strong>, <strong>path count 55</strong></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>9. Non-Functional Requirements (NFRs)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>NFR</th>
+            <th>Implementation</th>
+            <th>Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Security</td>
+            <td>JWT auth, role checks, bcrypt password hashing, helmet, CORS and structured error responses</td>
+            <td>Protected API access and reduced exposure</td>
+          </tr>
+          <tr>
+            <td>Usability</td>
+            <td>Dashboard pages, clear flows, validation messages, consistent navigation</td>
+            <td>Accessible business operation flows</td>
+          </tr>
+          <tr>
+            <td>Reliability</td>
+            <td>Validation checks, fallback behaviors, database-ready startup flow, seeded defaults</td>
+            <td>Stable execution under common frontend/backend usage</td>
+          </tr>
+          <tr>
+            <td>Maintainability</td>
+            <td>Modular route organization, central API docs, domain-specific groupings</td>
+            <td>Easy to extend with additional EHS modules</td>
+          </tr>
+          <tr>
+            <td>Auditability</td>
+            <td>Audit log actions, admin settings, compliance and incident records</td>
+            <td>Traceability for operational decisions</td>
+          </tr>
+          <tr>
+            <td>Scalability</td>
+            <td>Database-backed storage, paginated list endpoints, modular domain separation</td>
+            <td>Suitable for growth to additional module and user load</td>
+          </tr>
+          <tr>
+            <td>Interoperability</td>
+            <td>REST JSON API, OpenAPI generation, direct static frontend integration</td>
+            <td>Works well with browser clients and API consumers</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>10. Design and Implementation Notes</h2>
+      <ul>
+        <li>Static UI pages are served from the backend and are designed for fast local deployment and simple demonstration.</li>
+        <li>Authentication and authorization are built around real JWT-backed flows, with role-based restrictions applied to sensitive endpoints.</li>
+        <li>Database and app logic were aligned to real runtime usage, including seeded users and seeded EHS data.</li>
+        <li>API contracts are exposed for review and manual testing through Swagger UI.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>11. Supporting Project References</h2>
+      <ul>
+        <li><a href="README.md">README.md</a></li>
+        <li><a href="PROJECT_SUMMARY.md">PROJECT_SUMMARY.md</a></li>
+        <li><a href="BACKEND_API_SPECIFICATIONS.md">BACKEND_API_SPECIFICATIONS.md</a></li>
+        <li><a href="backend/package.json">backend/package.json</a></li>
+        <li><a href="backend/server.js">backend/server.js</a></li>
+        <li><a href="database/init.sql">database/init.sql</a></li>
+        <li><a href="frontend/playwright.config.js">frontend/playwright.config.js</a></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>12. Final Outcome</h2>
+      <p>The EHS Suite is now a complete working platform that includes the core EHS and compliance workflow stack, backed by structured data, controlled access, browser-based user interactions, API documentation, and end-to-end validation. It is ready for demo, stakeholder review, and further extension into production-grade deployment, stronger file storage integration, and more advanced reporting scenarios.</p>
+      <div class="status done" style="padding: 8px 12px; font-size: 0.9rem;">Overall Status: Successfully implemented and validated</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHS Suite - Onboarding Wizard</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+        .screen-wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+        .screen-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .screen-header h1 { margin: 0; font-size: 28px; color: var(--primary-dark); }
+        .chip-link { text-decoration: none; color: var(--primary-dark); border: 1px solid var(--border-color); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-sm); padding: 14px; }
+        .card h2 { margin: 0 0 10px; font-size: 18px; color: var(--text-dark); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-row.single { grid-template-columns: 1fr; }
+        input, textarea { width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; font-size: 14px; }
+        textarea { min-height: 90px; resize: vertical; }
+        .btn { border: none; background: var(--primary-dark); color: #fff; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; font-weight: 600; }
+        .btn.secondary { background: #fff; color: var(--text-dark); border: 1px solid var(--border-color); }
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .progress { margin: 12px 0; }
+        .progress-track { height: 10px; background: var(--bg-light); border-radius: 999px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-dark), var(--primary-light)); transition: width .3s ease; }
+        .progress-meta { font-size: 12px; color: var(--text-light); margin-top: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; border-bottom: 1px solid var(--border-color); padding: 8px; font-size: 13px; }
+        th { font-size: 12px; text-transform: uppercase; color: var(--text-light); }
+        pre { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 10px; max-height: 230px; overflow: auto; font-size: 12px; }
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-wrap">
+        <div class="screen-header">
+            <div>
+                <h1>Onboarding Wizard</h1>
+                <p>Start checklist, view progress, and complete workflow steps.</p>
+            </div>
+            <div>
+                <a class="chip-link" href="dashboard.html">Back to Dashboard</a>
+                <a class="chip-link" href="employees.html">Employee Directory</a>
+            </div>
+        </div>
+
+        <div class="grid">
+            <section class="card">
+                <h2>Start Onboarding</h2>
+                <div class="form-row">
+                    <input id="startEmployeeId" type="number" placeholder="Employee ID" />
+                    <input id="templateId" type="number" placeholder="Template ID (optional)" />
+                </div>
+                <div class="form-row">
+                    <input id="totalSteps" type="number" min="1" max="10" placeholder="Total Steps (default 5)" />
+                    <button id="startOnboardingBtn" class="btn" type="button">Start Checklist</button>
+                </div>
+                <div class="progress">
+                    <div class="progress-track"><div id="onboardingProgressFill" class="progress-fill"></div></div>
+                    <div id="onboardingProgressMeta" class="progress-meta">Progress: 0%</div>
+                </div>
+                <div class="btn-row">
+                    <button id="loadOnboardingBtn" class="btn secondary" type="button">Load Current Status</button>
+                </div>
+                <pre id="onboardingLog"></pre>
+            </section>
+
+            <section class="card">
+                <h2>Complete Step</h2>
+                <div class="form-row">
+                    <input id="stepEmployeeId" type="number" placeholder="Employee ID" />
+                    <input id="taskId" type="number" placeholder="Task ID" />
+                </div>
+                <div class="form-row single">
+                    <textarea id="stepNotes" placeholder="Completion notes"></textarea>
+                </div>
+                <button id="completeStepBtn" class="btn" type="button">Complete Task</button>
+                <table>
+                    <thead>
+                        <tr><th>Task ID</th><th>Step</th><th>Task</th><th>Done</th></tr>
+                    </thead>
+                    <tbody id="tasksBody"></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <script src="onboarding.js"></script>
+</body>
+</html>

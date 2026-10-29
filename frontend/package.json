@@ -5,7 +5,12 @@
   "scripts": {
     "serve": "http-server",
     "build": "echo 'Static files ready'",
-    "cap": "capacitor"
+    "cap": "capacitor",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test ui-screens.spec.js",
+    "test:e2e:smoke": "playwright test operations.spec.js",
+    "test:e2e:full": "playwright test"
   },
   "keywords": ["ehs", "compliance", "safety"],
   "author": "OASIS EHS",
@@ -19,6 +24,7 @@
     "@capacitor/network": "^6.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/android": "^6.0.0",
     "http-server": "^14.1.1"

@@ -23,7 +23,7 @@
                         <p>EHS Platform</p>
                     </div>
                 </div>
-                <button class="close-sidebar" onclick="toggleSidebar()">
+                <button class="close-sidebar" onclick="toggleSidebar()" title="Close sidebar" aria-label="Close sidebar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -35,13 +35,13 @@
                 <!-- Overview Section -->
                 <div class="nav-section">
                     <p class="nav-label">Overview</p>
-                    <a href="#" class="nav-link active">
+                    <a href="dashboard.html" class="nav-link active">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 12h18M3 6h18M3 18h18"/>
                         </svg>
                         <span>My Dashboard</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="operations.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 12c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8z"/>
                         </svg>
@@ -52,14 +52,14 @@
                 <!-- Daily Operations -->
                 <div class="nav-section">
                     <p class="nav-label">Daily Operations</p>
-                    <a href="#" class="nav-link">
+                    <a href="operations.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
                         <span>PTW / SSRA Submission</span>
                         <span class="badge">3</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="incidents.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                         </svg>
@@ -71,14 +71,14 @@
                 <!-- Compliance -->
                 <div class="nav-section">
                     <p class="nav-label">Compliance</p>
-                    <a href="#" class="nav-link">
+                    <a href="uploads.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 11l3 3L22 4"/>
                         </svg>
                         <span>Certificate Repository</span>
                         <span class="badge">8</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="operations.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
                         </svg>
@@ -89,13 +89,13 @@
                 <!-- Assets -->
                 <div class="nav-section">
                     <p class="nav-label">Assets</p>
-                    <a href="#" class="nav-link">
+                    <a href="assets.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 7v6h6V7H3z"/>
                         </svg>
                         <span>PPE & Equipment</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="assets.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
                         </svg>
@@ -107,13 +107,13 @@
                 <!-- Performance -->
                 <div class="nav-section">
                     <p class="nav-label">Performance</p>
-                    <a href="#" class="nav-link">
+                    <a href="operations.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 000 7H6"/>
                         </svg>
                         <span>EHS Scorecard</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="documents.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
                         </svg>
@@ -124,17 +124,23 @@
                 <!-- HR & Admin -->
                 <div class="nav-section">
                     <p class="nav-label">HR & Admin</p>
-                    <a href="#" class="nav-link">
+                    <a href="training.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
                         </svg>
                         <span>Training & Assessment</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="employees.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/>
                         </svg>
                         <span>Employee Management</span>
+                    </a>
+                    <a href="onboarding.html" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12l4 4L19 6"/><path d="M4 4h16v16H4z"/>
+                        </svg>
+                        <span>Onboarding Wizard</span>
                     </a>
                 </div>
                 
@@ -147,11 +153,11 @@
                         </svg>
                         <span>File Manager</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="admin-settings.html" class="nav-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
                         </svg>
-                        <span>Settings</span>
+                        <span>Portal Settings</span>
                     </a>
                 </div>
             </nav>
@@ -168,11 +174,11 @@
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                 </div>
-                <div class="user-menu" id="userMenu" style="display:none;">
+                <div class="user-menu" id="userMenu">
                     <a href="#" class="menu-item">Profile</a>
                     <a href="#" class="menu-item">Settings</a>
                     <a href="#" class="menu-item">Help</a>
-                    <hr style="margin:8px 0;border:none;border-top:1px solid var(--border-color);">
+                    <hr class="menu-divider">
                     <a href="index.html" class="menu-item logout">Logout</a>
                 </div>
             </div>
@@ -182,7 +188,7 @@
         <main class="main-content">
             <!-- Header -->
             <header class="header">
-                <button class="menu-toggle" onclick="toggleSidebar()">
+                <button class="menu-toggle" onclick="toggleSidebar()" title="Open sidebar" aria-label="Open sidebar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
@@ -265,7 +271,7 @@
                                     <span class="progress-text">41 of 47 active employees submitted</span>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 87.3%;"></div>
+                                    <div class="progress-fill progress-fill-87"></div>
                                 </div>
                                 <div class="progress-info">
                                     <span>6 missing uploads</span>
@@ -336,35 +342,68 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Portal Shortcuts</h3>
+                            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <div class="portal-grid">
+                                <a class="portal-link" href="employees.html">
+                                    <span class="portal-title">Employee Lifecycle</span>
+                                    <span class="portal-subtitle">Directory and role actions</span>
+                                </a>
+                                <a class="portal-link" href="training.html">
+                                    <span class="portal-title">Training Portal</span>
+                                    <span class="portal-subtitle">Assignments and history</span>
+                                </a>
+                                <a class="portal-link" href="documents.html">
+                                    <span class="portal-title">Document Portal</span>
+                                    <span class="portal-subtitle">Search and lifecycle records</span>
+                                </a>
+                                <a class="portal-link" href="assets.html">
+                                    <span class="portal-title">Asset Management</span>
+                                    <span class="portal-subtitle">Inventory and lifecycle</span>
+                                </a>
+                                <a class="portal-link" href="incidents.html">
+                                    <span class="portal-title">Incident Hub</span>
+                                    <span class="portal-subtitle">Capture and triage reports</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Action Items -->
                 <div class="action-section">
                     <h3>Quick Actions</h3>
                     <div class="action-buttons">
-                        <button class="action-btn">
+                        <button class="action-btn" onclick="window.location.href='operations.html'">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14"/>
                             </svg>
                             Create PTW/SSRA
                         </button>
-                        <button class="action-btn">
+                        <button class="action-btn" onclick="window.location.href='incidents.html'">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                             </svg>
                             Report Incident
                         </button>
-                        <button class="action-btn">
+                        <button class="action-btn" onclick="window.location.href='documents.html'">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M9 11l3 3L22 4"/>
                             </svg>
                             View Certificates
                         </button>
-                        <button class="action-btn">
+                        <button class="action-btn" onclick="window.location.href='onboarding.html'">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
                             </svg>
-                            Settings
+                            Start Onboarding
                         </button>
                     </div>
                 </div>

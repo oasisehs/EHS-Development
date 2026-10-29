@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHS Suite - Asset Management</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+        .screen-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .screen-header h1 {
+            font-size: 28px;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+        .links a {
+            text-decoration: none;
+            color: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            background: #fff;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+            padding: 16px;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin: 0 0 12px;
+            color: var(--text-dark);
+        }
+        .table-controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .table-controls input, .table-controls select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+            width: 100%;
+        }
+        .table-controls button {
+            border: none;
+            background: var(--primary-dark);
+            color: #fff;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-light);
+        }
+        .status {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status.active { background: #ecfdf5; color: #065f46; }
+        .status.maintenance { background: #fff7ed; color: #9a3412; }
+        .status.archived { background: #f1f5f9; color: #334155; }
+        .status.disposed { background: #fef2f2; color: #991b1b; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .form-grid input, .form-grid select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            width: 100%;
+        }
+        .form-grid button {
+            border: none;
+            background: var(--primary-dark);
+            color: #fff;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .meta {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        .archive-btn {
+            border: 1px solid var(--border-color);
+            background: #fff;
+            color: var(--text-dark);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .archive-btn:hover {
+            border-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        .pagination {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+        .pagination-btn {
+            border: 1px solid var(--border-color);
+            background: #fff;
+            color: var(--text-dark);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination-text {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .screen-header { flex-direction: column; align-items: flex-start; }
+            .table-controls { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-wrap">
+        <div class="screen-header">
+            <div>
+                <h1>Asset Management</h1>
+                <p>Track office and field assets, assignment status, and maintenance lifecycle.</p>
+            </div>
+            <div class="links">
+                <a href="dashboard.html">Back to Dashboard</a>
+                <a href="uploads.html">Files</a>
+            </div>
+        </div>
+
+        <div class="layout">
+            <section class="card">
+                <h2>Asset Register</h2>
+                <p class="meta">Live data from asset API</p>
+                <div class="table-controls">
+                    <input id="assetSearch" placeholder="Search by tag, name, or location" />
+                    <select id="assetFilterType" title="Filter by asset type">
+                        <option value="">All Types</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="ppe">PPE</option>
+                        <option value="tool">Tool</option>
+                        <option value="vehicle">Vehicle</option>
+                        <option value="facility">Facility</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <select id="assetFilterStatus" title="Filter by asset status">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="disposed">Disposed</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                    <button id="applyAssetFiltersBtn" type="button">Apply</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tag</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assetsTableBody"></tbody>
+                </table>
+                <div class="pagination">
+                    <span id="assetsPaginationText" class="pagination-text">Page 1 of 1</span>
+                    <div class="pagination-controls">
+                        <button id="assetsPrevBtn" class="pagination-btn" type="button">Previous</button>
+                        <button id="assetsNextBtn" class="pagination-btn" type="button">Next</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Quick Add Asset</h2>
+                <div class="form-grid">
+                    <input id="assetTag" placeholder="Asset Tag (e.g. EHS-LP-204)" />
+                    <input id="assetName" placeholder="Asset Name" />
+                    <select id="assetType" title="Asset type">
+                        <option value="equipment">Equipment</option>
+                        <option value="ppe">PPE</option>
+                        <option value="tool">Tool</option>
+                        <option value="vehicle">Vehicle</option>
+                        <option value="facility">Facility</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <input id="assetLocation" placeholder="Location" />
+                    <select id="assetStatus" title="Asset status">
+                        <option value="active">Active</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="disposed">Disposed</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                    <button id="addAssetBtn">Add Asset</button>
+                    <button id="refreshAssetsBtn" type="button">Refresh Asset List</button>
+                </div>
+                <p class="meta">Add, list, and archive assets through backend APIs.</p>
+            </section>
+        </div>
+    </div>
+
+    <script src="assets.js"></script>
+</body>
+</html>

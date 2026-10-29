@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHS Suite - Incident Hub</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+        .screen-wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .screen-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .screen-header h1 { margin: 0; font-size: 28px; color: var(--primary-dark); }
+        .chip-link { text-decoration: none; color: var(--primary-dark); border: 1px solid var(--border-color); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+        .grid { display: grid; grid-template-columns: 1.1fr 1.9fr; gap: 14px; }
+        .panel { background: #fff; border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-sm); padding: 14px; }
+        .panel h2 { margin: 0 0 10px; font-size: 18px; color: var(--text-dark); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-row.single { grid-template-columns: 1fr; }
+        input, select, textarea { width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; font-size: 14px; }
+        textarea { min-height: 95px; resize: vertical; }
+        .btn { border: none; background: var(--primary-dark); color: #fff; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; font-weight: 600; }
+        .btn.secondary { background: #fff; color: var(--text-dark); border: 1px solid var(--border-color); }
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+        .kpi { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; }
+        .kpi .label { color: var(--text-light); font-size: 12px; }
+        .kpi .value { color: var(--text-dark); font-size: 20px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; border-bottom: 1px solid var(--border-color); padding: 8px; font-size: 13px; }
+        th { font-size: 12px; text-transform: uppercase; color: var(--text-light); }
+        @media (max-width: 950px) {
+            .grid { grid-template-columns: 1fr; }
+            .kpis { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-wrap">
+        <div class="screen-header">
+            <div>
+                <h1>Incident & Compliance Hub</h1>
+                <p>Capture incidents and track compliance status in one place.</p>
+            </div>
+            <div>
+                <a class="chip-link" href="dashboard.html">Back to Dashboard</a>
+                <a class="chip-link" href="documents.html">Document Portal</a>
+            </div>
+        </div>
+
+        <div class="kpis">
+            <div class="kpi"><div class="label">Total Incidents</div><div id="incTotal" class="value">0</div></div>
+            <div class="kpi"><div class="label">Open Incidents</div><div id="incOpen" class="value">0</div></div>
+            <div class="kpi"><div class="label">High Severity</div><div id="incHigh" class="value">0</div></div>
+        </div>
+
+        <div class="grid">
+            <section class="panel">
+                <h2>Report Incident</h2>
+                <div class="form-row">
+                    <input id="incidentEmployeeId" type="number" placeholder="Employee ID" />
+                    <select id="incidentSeverity" title="Incident severity">
+                        <option value="low">low</option>
+                        <option value="medium" selected>medium</option>
+                        <option value="high">high</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <input id="incidentCategory" placeholder="Category (e.g. Safety)" />
+                    <input id="incidentDate" type="date" />
+                </div>
+                <div class="form-row single">
+                    <textarea id="incidentDescription" placeholder="Describe the incident"></textarea>
+                </div>
+                <div class="btn-row">
+                    <button id="submitIncidentBtn" class="btn" type="button">Submit Incident</button>
+                    <button id="refreshIncidentsBtn" class="btn secondary" type="button">Refresh</button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Incident Log</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Employee</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incidentsBody"></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <script src="incidents.js"></script>
+</body>
+</html>

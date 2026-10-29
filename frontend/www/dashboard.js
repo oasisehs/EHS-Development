@@ -34,17 +34,16 @@ function toggleSidebar() {
  */
 function toggleUserMenu() {
     const userMenu = document.getElementById('userMenu');
-    const isVisible = userMenu.style.display === 'flex';
+    const isVisible = userMenu.classList.contains('is-open');
     
     // Close all menus
     document.querySelectorAll('.user-menu').forEach(menu => {
-        menu.style.display = 'none';
+        menu.classList.remove('is-open');
     });
     
     // Toggle current menu
     if (!isVisible) {
-        userMenu.style.display = 'flex';
-        userMenu.style.flexDirection = 'column';
+        userMenu.classList.add('is-open');
     }
 }
 
@@ -56,7 +55,7 @@ function handleOutsideClick(event) {
     const userProfile = document.querySelector('.user-profile');
     
     if (!userProfile.contains(event.target) && !userMenu.contains(event.target)) {
-        userMenu.style.display = 'none';
+        userMenu.classList.remove('is-open');
     }
 }
 
@@ -81,12 +80,60 @@ function updateDate() {
  * Check user session
  */
 function checkUserSession() {
-    const user = sessionStorage.getItem('ehssuite_user') || localStorage.getItem('ehssuite_user');
-    
-    if (!user) {
+    const userRaw = sessionStorage.getItem('ehssuite_user') || localStorage.getItem('ehssuite_user');
+
+    if (!userRaw) {
         // Redirect to login if no session
         window.location.href = 'index.html';
+        return;
     }
+
+    try {
+        const user = JSON.parse(userRaw);
+        applyUserProfile(user);
+    } catch (error) {
+        // If stored user data is corrupted, force a clean login.
+        logout();
+    }
+}
+
+function getInitials(name) {
+    const fullName = String(name || '').trim();
+    if (!fullName) return 'U';
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function formatRole(role) {
+    if (!role) return 'User';
+    return String(role)
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function applyUserProfile(user) {
+    const displayName = user.full_name || user.name || user.email || 'User';
+    const roleText = formatRole(user.role);
+    const initials = getInitials(displayName);
+
+    const sidebarAvatar = document.querySelector('.sidebar-footer .user-avatar');
+    if (sidebarAvatar) sidebarAvatar.textContent = initials;
+
+    const sidebarName = document.querySelector('.sidebar-footer .user-name');
+    if (sidebarName) sidebarName.textContent = displayName;
+
+    const sidebarRole = document.querySelector('.sidebar-footer .user-role');
+    if (sidebarRole) sidebarRole.textContent = roleText;
+
+    const headerAvatar = document.querySelector('.user-profile-header .user-avatar-small');
+    if (headerAvatar) headerAvatar.textContent = initials;
+
+    const headerName = document.querySelector('.user-profile-header span');
+    if (headerName) headerName.textContent = displayName;
+
+    const welcomeTitle = document.querySelector('.content-header h2');
+    if (welcomeTitle) welcomeTitle.textContent = `Welcome back, ${displayName}`;
 }
 
 /**

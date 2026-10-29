@@ -3,9 +3,11 @@
 // ==========================================
 
 // Detect backend URL: use localhost for local dev, Render for production
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:5000'
-  : 'https://ehs-development.onrender.com';
+const API_BASE_URL = window.__API_BASE_URL
+    || localStorage.getItem('ehs_api_base_url')
+    || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000'
+        : window.location.origin);
 
 document.addEventListener('DOMContentLoaded', function() {
     const signupForm = document.getElementById('signupForm');

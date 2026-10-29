@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EHS Operations Console</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .ops-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .ops-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .ops-header h1 {
+            font-size: 24px;
+            color: var(--primary-dark);
+        }
+
+        .ops-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ops-btn {
+            border: 1px solid var(--border-color);
+            background: var(--bg-white);
+            color: var(--text-dark);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .ops-btn.primary {
+            background: var(--primary-dark);
+            color: var(--bg-white);
+            border-color: var(--primary-dark);
+        }
+
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .ops-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            padding: 16px;
+        }
+
+        .ops-card h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        .ops-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .ops-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        .ops-card input,
+        .ops-card select,
+        .ops-card textarea {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .ops-card textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .ops-card .ops-btn {
+            margin-top: 4px;
+        }
+
+        .ops-table-wrap {
+            overflow: auto;
+            max-height: 260px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background: var(--bg-light);
+            font-weight: 700;
+        }
+
+        .ops-log {
+            margin-top: 10px;
+            font-size: 12px;
+            background: #0f172a;
+            color: #d1fae5;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 60px;
+            max-height: 160px;
+            overflow: auto;
+        }
+
+        .ops-note {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        @media (max-width: 980px) {
+            .ops-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ops-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ops-container">
+        <div class="ops-header">
+            <h1>Operations Console</h1>
+            <div class="ops-actions">
+                <a class="ops-btn" href="dashboard.html">Back to Dashboard</a>
+                <a class="ops-btn" href="uploads.html">File Manager</a>
+                <a class="ops-btn primary" href="http://localhost:5000/api/docs" target="_blank" rel="noreferrer noopener">Open API Docs</a>
+            </div>
+        </div>
+
+        <p class="ops-note">This screen manages Employees, Departments, Training, Compliance, and Onboarding using your live backend APIs.</p>
+
+        <div class="ops-grid">
+            <section class="ops-card">
+                <h2>Employees</h2>
+                <div class="ops-row">
+                    <input id="empFirstName" placeholder="First name" />
+                    <input id="empLastName" placeholder="Last name" />
+                </div>
+                <div class="ops-row">
+                    <input id="empEmail" placeholder="Email" />
+                    <input id="empJobTitle" placeholder="Job title" />
+                </div>
+                <div class="ops-row">
+                    <input id="empDepartmentId" placeholder="Department ID" type="number" />
+                    <select id="empStatus" title="Employee status">
+                        <option value="active">active</option>
+                        <option value="inactive">inactive</option>
+                        <option value="on_leave">on_leave</option>
+                        <option value="terminated">terminated</option>
+                    </select>
+                </div>
+                <button class="ops-btn primary" id="createEmployeeBtn">Create Employee</button>
+                <button class="ops-btn" id="loadEmployeesBtn">Refresh Employees</button>
+                <div class="ops-table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Name</th><th>Email</th><th>Status</th><th>Dept</th></tr>
+                        </thead>
+                        <tbody id="employeesBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="ops-card">
+                <h2>Departments</h2>
+                <div class="ops-row">
+                    <input id="deptName" placeholder="Department name" />
+                    <input id="deptManagerId" placeholder="Manager user ID" type="number" />
+                </div>
+                <div class="ops-row single">
+                    <textarea id="deptDescription" placeholder="Description"></textarea>
+                </div>
+                <button class="ops-btn primary" id="createDepartmentBtn">Create Department</button>
+                <button class="ops-btn" id="loadDepartmentsBtn">Refresh Departments</button>
+                <div class="ops-table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Name</th><th>Manager</th><th>Employees</th></tr>
+                        </thead>
+                        <tbody id="departmentsBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="ops-card">
+                <h2>Training</h2>
+                <div class="ops-row">
+                    <input id="trainingEmployeeId" placeholder="Employee ID" type="number" />
+                    <input id="trainingCourseId" placeholder="Course ID" type="number" />
+                </div>
+                <div class="ops-row">
+                    <select id="trainingStatus" title="Training status">
+                        <option value="enrolled">enrolled</option>
+                        <option value="in_progress">in_progress</option>
+                        <option value="completed">completed</option>
+                        <option value="failed">failed</option>
+                        <option value="dropped">dropped</option>
+                    </select>
+                    <input id="trainingScore" placeholder="Final score" type="number" />
+                </div>
+                <button class="ops-btn primary" id="saveTrainingBtn">Save Training</button>
+                <button class="ops-btn" id="viewTrainingBtn">Get Training History</button>
+                <div class="ops-log" id="trainingLog"></div>
+            </section>
+
+            <section class="ops-card">
+                <h2>Compliance</h2>
+                <div class="ops-row">
+                    <input id="compEmployeeId" placeholder="Employee ID" type="number" />
+                    <input id="compTemplateId" placeholder="Template ID" type="number" />
+                </div>
+                <div class="ops-row">
+                    <input id="compDueDate" type="date" title="Compliance due date" placeholder="Due date" />
+                    <select id="compStatus" title="Compliance status">
+                        <option value="pending">pending</option>
+                        <option value="completed">completed</option>
+                        <option value="overdue">overdue</option>
+                        <option value="failed">failed</option>
+                    </select>
+                </div>
+                <div class="ops-row single">
+                    <textarea id="compNotes" placeholder="Notes"></textarea>
+                </div>
+                <button class="ops-btn primary" id="createComplianceBtn">Create Compliance Record</button>
+                <button class="ops-btn" id="viewComplianceBtn">Get Compliance Status</button>
+                <div class="ops-log" id="complianceLog"></div>
+            </section>
+
+            <section class="ops-card">
+                <h2>Permit / PTW / SSRA</h2>
+                <div class="ops-row">
+                    <select id="permitType" title="Permit type">
+                        <option value="hot_work">hot_work</option>
+                        <option value="confined_space">confined_space</option>
+                        <option value="lifting">lifting</option>
+                        <option value="electrical">electrical</option>
+                        <option value="general">general</option>
+                        <option value="ssra">ssra</option>
+                    </select>
+                    <input id="permitTitle" placeholder="Permit title" />
+                </div>
+                <div class="ops-row">
+                    <input id="permitSite" placeholder="Site" />
+                    <input id="permitLocation" placeholder="Location" />
+                </div>
+                <div class="ops-row">
+                    <input id="permitSubmittedBy" placeholder="Submitted by employee ID" type="number" />
+                    <select id="permitStatus" title="Permit status">
+                        <option value="draft">draft</option>
+                        <option value="submitted">submitted</option>
+                        <option value="pending_review">pending_review</option>
+                        <option value="approved">approved</option>
+                        <option value="rejected">rejected</option>
+                        <option value="expired">expired</option>
+                    </select>
+                </div>
+                <div class="ops-row single">
+                    <textarea id="permitDescription" placeholder="Permit description"></textarea>
+                </div>
+                <div class="ops-row single">
+                    <textarea id="permitNotes" placeholder="Approval remarks"></textarea>
+                </div>
+                <button class="ops-btn primary" id="createPermitBtn">Create Permit</button>
+                <button class="ops-btn" id="loadPermitsBtn">Load Permits</button>
+                <button class="ops-btn" id="approvePermitBtn">Approve Selected Permit</button>
+                <button class="ops-btn" id="rejectPermitBtn">Reject Selected Permit</button>
+                <div class="ops-log" id="permitLog"></div>
+            </section>
+
+            <section class="ops-card">
+                <h2>Onboarding</h2>
+                <div class="ops-row">
+                    <input id="onboardEmployeeId" placeholder="Employee ID" type="number" />
+                    <input id="onboardTemplateId" placeholder="Template ID (optional)" type="number" />
+                </div>
+                <div class="ops-row">
+                    <input id="onboardSteps" placeholder="Total steps" type="number" value="5" />
+                    <input id="onboardTaskId" placeholder="Task ID for step completion" type="number" />
+                </div>
+                <div class="ops-row single">
+                    <textarea id="onboardNotes" placeholder="Step notes"></textarea>
+                </div>
+                <button class="ops-btn primary" id="startOnboardingBtn">Start Onboarding</button>
+                <button class="ops-btn" id="getOnboardingBtn">Get Onboarding</button>
+                <button class="ops-btn" id="completeStepBtn">Complete Step</button>
+                <div class="ops-log" id="onboardingLog"></div>
+            </section>
+        </div>
+    </div>
+
+    <script src="operations.js"></script>
+</body>
+</html>

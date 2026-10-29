@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHS Suite - HR Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <style>
+        .screen-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .screen-header h1 {
+            font-size: 28px;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+        .quick-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .chip-link {
+            text-decoration: none;
+            color: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            background: #fff;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+            padding: 16px;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin: 0 0 12px;
+            color: var(--text-dark);
+        }
+        .kpi {
+            grid-column: span 3;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .kpi .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+        .kpi .meta {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        .table-card {
+            grid-column: span 8;
+        }
+        .action-card {
+            grid-column: span 4;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            letter-spacing: 0.5px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-row input, .form-row select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            width: 100%;
+        }
+        .btn {
+            border: none;
+            background: var(--primary-dark);
+            color: #fff;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+        .subtle {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pill.pending { background: #fff7ed; color: #9a3412; }
+        .status-pill.approved { background: #ecfdf5; color: #065f46; }
+        .status-pill.rejected { background: #fef2f2; color: #991b1b; }
+        @media (max-width: 1024px) {
+            .kpi { grid-column: span 6; }
+            .table-card, .action-card { grid-column: span 12; }
+        }
+        @media (max-width: 640px) {
+            .kpi { grid-column: span 12; }
+            .form-row { grid-template-columns: 1fr; }
+            .screen-header { align-items: flex-start; flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-wrap">
+        <div class="screen-header">
+            <div>
+                <h1>HR Dashboard</h1>
+                <p class="subtle">Leave requests, attendance signal, and employee status overview.</p>
+            </div>
+            <div class="quick-links">
+                <a class="chip-link" href="dashboard.html">Back to Dashboard</a>
+                <a class="chip-link" href="operations.html">Operations Console</a>
+            </div>
+        </div>
+
+        <div class="grid">
+            <section class="card kpi">
+                <h2>Active Employees</h2>
+                <div class="value" id="activeEmployees">0</div>
+                <div class="meta">Real-time count from employee records</div>
+            </section>
+            <section class="card kpi">
+                <h2>On Leave</h2>
+                <div class="value" id="onLeaveEmployees">0</div>
+                <div class="meta">Status = on_leave</div>
+            </section>
+            <section class="card kpi">
+                <h2>Compliance Avg</h2>
+                <div class="value" id="complianceAvg">0%</div>
+                <div class="meta">Average compliance score</div>
+            </section>
+            <section class="card kpi">
+                <h2>Open Requests</h2>
+                <div class="value" id="openLeaveRequests">3</div>
+                <div class="meta">Demo workflow queue</div>
+            </section>
+
+            <section class="card table-card">
+                <h2>Recent Leave Requests</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaveTableBody"></tbody>
+                </table>
+            </section>
+
+            <section class="card action-card">
+                <h2>Create Leave Request</h2>
+                <div class="form-row">
+                    <input id="leaveEmployee" placeholder="Employee name" />
+                    <select id="leaveType" title="Leave type">
+                        <option value="Annual">Annual</option>
+                        <option value="Sick">Sick</option>
+                        <option value="Emergency">Emergency</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <input id="leaveFrom" type="date" />
+                    <input id="leaveTo" type="date" />
+                </div>
+                <button id="addLeaveBtn" class="btn">Add Request</button>
+                <div class="subtle">This UI is wired for immediate workflow validation. Backend leave endpoints can be connected in Phase 2 integration.</div>
+            </section>
+        </div>
+    </div>
+
+    <script src="hr.js"></script>
+</body>
+</html>
