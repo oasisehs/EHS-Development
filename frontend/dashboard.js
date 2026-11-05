@@ -90,6 +90,10 @@ function checkUserSession() {
 
     try {
         const user = JSON.parse(userRaw);
+        if (user?.must_change_password) {
+            window.location.href = 'first-login-password.html';
+            return;
+        }
         applyUserProfile(user);
     } catch (error) {
         // If stored user data is corrupted, force a clean login.
@@ -141,7 +145,9 @@ function applyUserProfile(user) {
  */
 function logout() {
     sessionStorage.removeItem('ehssuite_user');
+    sessionStorage.removeItem('ehssuite_token');
     localStorage.removeItem('ehssuite_user');
+    localStorage.removeItem('ehssuite_token');
     localStorage.removeItem('ehssuite_remember');
     window.location.href = 'index.html';
 }

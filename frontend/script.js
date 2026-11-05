@@ -164,11 +164,18 @@ function handleLogin(e) {
     .then(data => {
         if (data.token) {
             // Success
-            showSuccessMessage('Login successful! Redirecting...');
+            const firstLoginRequired = Boolean(data.user?.must_change_password);
+            if (firstLoginRequired) {
+                showSuccessMessage('First login detected. Please update your password to continue. Redirecting...');
+            } else {
+                showSuccessMessage('Login successful! Redirecting...');
+            }
             
             // Store user session and token
             localStorage.setItem('ehssuite_token', data.token);
+            sessionStorage.setItem('ehssuite_token', data.token);
             localStorage.setItem('ehssuite_user', JSON.stringify(data.user));
+            sessionStorage.setItem('ehssuite_user', JSON.stringify(data.user));
             
             if (rememberMe) {
                 localStorage.setItem('ehssuite_remember', 'true');
@@ -178,6 +185,10 @@ function handleLogin(e) {
             
             // Redirect to dashboard after 2 seconds
             setTimeout(() => {
+                if (data.user?.must_change_password) {
+                    window.location.href = 'first-login-password.html';
+                    return;
+                }
                 window.location.href = 'dashboard.html';
             }, 2000);
         } else {

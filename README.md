@@ -77,6 +77,9 @@ npm run test:e2e:headed
 - `employee@ehssuite.com` / `demo123456`
 - `safety@ehssuite.com` / `demo123456`
 
+If demo logins stop working in local development, run `npm run seed` from [backend](C:/CODEBASE/EHS/backend).
+The seed flow now refreshes demo-user password hashes back to the credentials above.
+
 ## Production Notes
 
 Backend now validates required production configuration at startup. In production, set:

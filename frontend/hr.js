@@ -70,7 +70,13 @@ async function loadHrMetrics() {
     });
     if (!compRes.ok) continue;
     const compPayload = await compRes.json().catch(() => ({}));
-    const rows = compPayload.data || [];
+    const rows = Array.isArray(compPayload.records)
+      ? compPayload.records
+      : Array.isArray(compPayload.data?.records)
+        ? compPayload.data.records
+        : Array.isArray(compPayload.data)
+          ? compPayload.data
+          : [];
     rows.forEach((r) => {
       if (typeof r.compliance_score === 'number') complianceScores.push(r.compliance_score);
     });

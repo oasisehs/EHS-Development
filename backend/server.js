@@ -11,6 +11,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const swaggerUi = require('swagger-ui-express');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -18,8 +19,182 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';
 const isProduction = process.env.NODE_ENV === 'production';
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const LOGS_DIR = path.join(__dirname, 'logs');
+const APP_LOG_FILE = process.env.APP_LOG_FILE || path.join(LOGS_DIR, 'application.log');
+const APP_LOG_ROTATE_DAILY = String(process.env.APP_LOG_ROTATE_DAILY || 'true').toLowerCase() !== 'false';
+const APP_LOG_RETENTION_DAYS = Math.max(1, Number.parseInt(process.env.APP_LOG_RETENTION_DAYS || '14', 10) || 14);
+const APP_LOG_LEVEL = String(process.env.APP_LOG_LEVEL || (isProduction ? 'info' : 'debug')).toLowerCase();
+
+const LOG_LEVELS = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40
+};
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function isLogLevelEnabled(level) {
+  const configured = LOG_LEVELS[APP_LOG_LEVEL] ?? LOG_LEVELS.info;
+  return (LOG_LEVELS[level] ?? LOG_LEVELS.info) >= configured;
+}
+
+function appLog(level, event, message, meta = {}) {
+  if (!isLogLevelEnabled(level)) {
+    return;
+  }
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    message,
+    ...meta
+  };
+
+  const logLine = `${JSON.stringify(payload)}\n`;
+
+  if (level === 'error') {
+    console.error(`[${event}] ${message}`);
+  } else if (level === 'warn') {
+    console.warn(`[${event}] ${message}`);
+  } else {
+    console.log(`[${event}] ${message}`);
+  }
+
+  try {
+    fs.appendFileSync(resolveActiveLogFilePath(), logLine, 'utf8');
+  } catch (error) {
+    console.error('[logger] Failed to write application log:', error.message);
+  }
+}
+
+function getModuleFromPath(pathname) {
+  const pathValue = String(pathname || '').toLowerCase();
+
+  const moduleMappings = [
+    { pattern: /^\/api\/(auth|login|register|forgot-password|reset-password|user)/, module: 'auth' },
+    { pattern: /^\/api\/admin/, module: 'admin' },
+    { pattern: /^\/api\/dashboard/, module: 'dashboard' },
+    { pattern: /^\/api\/reports/, module: 'reports' },
+    { pattern: /^\/api\/files/, module: 'documents' },
+    { pattern: /^\/api\/assets/, module: 'assets' },
+    { pattern: /^\/api\/incidents/, module: 'incidents' },
+    { pattern: /^\/api\/(permits|ssra)/, module: 'permits' },
+    { pattern: /^\/api\/(training|certifications)/, module: 'training' },
+    { pattern: /^\/api\/compliance/, module: 'compliance' },
+    { pattern: /^\/api\/onboarding/, module: 'onboarding' },
+    { pattern: /^\/api\/operations/, module: 'operations' },
+    { pattern: /^\/api\/management/, module: 'management' },
+    { pattern: /^\/api\/hr/, module: 'hr' },
+    { pattern: /^\/api\/employees/, module: 'employees' },
+    { pattern: /^\/api\/departments/, module: 'departments' },
+    { pattern: /^\/api\/attendance/, module: 'attendance' },
+    { pattern: /^\/api\/payroll/, module: 'payroll' },
+    { pattern: /^\/api\/ehs-records/, module: 'ehs-records' },
+    { pattern: /^\/api\/docs/, module: 'api-docs' }
+  ];
+
+  for (const mapping of moduleMappings) {
+    if (mapping.pattern.test(pathValue)) {
+      return mapping.module;
+    }
+  }
+
+  if (pathValue.startsWith('/api/')) {
+    const parts = pathValue.split('/').filter(Boolean);
+    return parts[1] || 'api';
+  }
+
+  if (pathValue.startsWith('/uploads')) {
+    return 'uploads';
+  }
+
+  return 'frontend';
+}
+
+function sanitizeRequestQuery(query = {}) {
+  const sensitiveKeys = new Set(['password', 'token', 'authorization', 'api_key', 'secret']);
+  const sanitized = {};
+
+  for (const [key, value] of Object.entries(query)) {
+    if (sensitiveKeys.has(String(key).toLowerCase())) {
+      sanitized[key] = '***';
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
+function formatDateForLogFile(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function resolveActiveLogFilePath() {
+  if (!APP_LOG_ROTATE_DAILY) {
+    return APP_LOG_FILE;
+  }
+
+  const ext = path.extname(APP_LOG_FILE);
+  const base = ext ? APP_LOG_FILE.slice(0, -ext.length) : APP_LOG_FILE;
+  return `${base}-${formatDateForLogFile()}${ext || '.log'}`;
+}
+
+function cleanupOldLogFiles() {
+  if (!APP_LOG_ROTATE_DAILY) {
+    return;
+  }
+
+  const activePath = resolveActiveLogFilePath();
+  const activeFileName = path.basename(activePath);
+  const cutoffMs = Date.now() - (APP_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
+  const ext = path.extname(APP_LOG_FILE) || '.log';
+  const appLogFileName = path.basename(APP_LOG_FILE);
+  const baseName = ext ? appLogFileName.slice(0, -ext.length) : appLogFileName;
+  const escapedBaseName = escapeRegex(baseName);
+  const escapedExt = escapeRegex(ext);
+  const filePattern = new RegExp(`^${escapedBaseName}-\\d{4}-\\d{2}-\\d{2}${escapedExt}$`);
+
+  let removedCount = 0;
+
+  try {
+    const entries = fs.readdirSync(LOGS_DIR, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      if (!filePattern.test(entry.name)) continue;
+      if (entry.name === activeFileName) continue;
+
+      const fullPath = path.join(LOGS_DIR, entry.name);
+      const stats = fs.statSync(fullPath);
+      if (stats.mtimeMs < cutoffMs) {
+        fs.unlinkSync(fullPath);
+        removedCount += 1;
+      }
+    }
+  } catch (error) {
+    console.error('[logger] Failed during log cleanup:', error.message);
+    return;
+  }
+
+  if (removedCount > 0) {
+    appLog('info', 'log_rotation', 'Old log files removed', {
+      removed_files: removedCount,
+      retention_days: APP_LOG_RETENTION_DAYS
+    });
+  }
+}
 
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+fs.mkdirSync(LOGS_DIR, { recursive: true });
+cleanupOldLogFiles();
 
 const parseAllowedOrigins = (value) => {
   if (!value) {
@@ -57,6 +232,15 @@ function validateRuntimeConfig() {
 }
 
 validateRuntimeConfig();
+appLog('info', 'startup', 'Runtime configuration validated', {
+  node_env: process.env.NODE_ENV || 'development',
+  port: Number(PORT),
+  smtp_configured: Boolean(process.env.SMTP_USER && process.env.SMTP_PASS),
+  app_log_file: resolveActiveLogFilePath(),
+  app_log_level: APP_LOG_LEVEL,
+  app_log_rotate_daily: APP_LOG_ROTATE_DAILY,
+  app_log_retention_days: APP_LOG_RETENTION_DAYS
+});
 
 // ===== AWS S3 CONFIGURATION =====
 const s3Client = new S3Client({
@@ -69,6 +253,75 @@ const s3Client = new S3Client({
 
 const S3_BUCKET = process.env.AWS_S3_BUCKET;
 const S3_URL = process.env.AWS_S3_URL;
+
+// ===== EMAIL (BREVO SMTP) CONFIGURATION =====
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_SECURE = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@ehssuite.com';
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'EHSSuite';
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+
+const hasSmtpConfig = Boolean(SMTP_USER && SMTP_PASS);
+const emailTransport = hasSmtpConfig
+  ? nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+      }
+    })
+  : null;
+
+async function sendPasswordResetEmail({ toEmail, resetToken }) {
+  const resetUrl = `${APP_BASE_URL}/forgot-password.html?token=${encodeURIComponent(resetToken)}`;
+
+  if (!emailTransport) {
+    return {
+      delivered: false,
+      reason: 'SMTP_NOT_CONFIGURED',
+      resetUrl
+    };
+  }
+
+  const mailOptions = {
+    from: `${EMAIL_FROM_NAME} <${EMAIL_FROM}>`,
+    to: toEmail,
+    subject: 'EHSSuite Password Reset',
+    text: [
+      'You requested a password reset for your EHSSuite account.',
+      '',
+      'Use the link below to reset your password (valid for 1 hour):',
+      resetUrl,
+      '',
+      'If you did not request this, you can safely ignore this email.'
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;max-width:560px;margin:0 auto;">
+        <h2 style="color:#1e5a96;">EHSSuite Password Reset</h2>
+        <p>You requested a password reset for your EHSSuite account.</p>
+        <p>Click the button below to reset your password. This link is valid for 1 hour.</p>
+        <p style="margin:24px 0;">
+          <a href="${resetUrl}" style="background:#1e5a96;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">Reset Password</a>
+        </p>
+        <p>If the button does not work, use this URL:</p>
+        <p><a href="${resetUrl}">${resetUrl}</a></p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;">
+        <p style="font-size:12px;color:#6b7280;">If you did not request this, you can safely ignore this email.</p>
+      </div>
+    `
+  };
+
+  await emailTransport.sendMail(mailOptions);
+  return {
+    delivered: true,
+    resetUrl
+  };
+}
 
 // Multer configuration for file uploads (memory storage for S3)
 const upload = multer({
@@ -421,11 +674,14 @@ function sendError(res, statusCode, message, options = {}) {
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     databaseReady = false;
-    console.warn('Database connection unavailable, using in-memory development fallback for auth flows.');
-    console.warn(err.message);
+    appLog('warn', 'database_connect', 'Database unavailable, using in-memory fallback for auth flows', {
+      error: err.message
+    });
     seedDemoMemoryUser();
   } else {
-    console.log('Connected to PostgreSQL database:', res.rows[0].now);
+    appLog('info', 'database_connect', 'Connected to PostgreSQL database', {
+      database_time: res.rows[0].now
+    });
   }
 });
 
@@ -436,7 +692,13 @@ app.use(
   })
 );
 
-app.use(morgan(isProduction ? 'combined' : 'dev'));
+app.use(
+  morgan(isProduction ? 'combined' : 'dev', {
+    stream: {
+      write: (line) => appLog('info', 'http_request', line.trim())
+    }
+  })
+);
 
 app.use(
   cors({
@@ -488,6 +750,44 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/uploads', express.static(UPLOADS_DIR));
+
+app.use((req, res, next) => {
+  const requestStartedAt = Date.now();
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const moduleName = getModuleFromPath(req.path);
+
+  req.logContext = {
+    requestId,
+    module: moduleName
+  };
+
+  appLog('debug', 'request_start', `${req.method} ${req.originalUrl}`, {
+    request_id: requestId,
+    module: moduleName,
+    method: req.method,
+    path: req.path,
+    query: sanitizeRequestQuery(req.query),
+    ip: req.ip,
+    user_id: req.userId || null
+  });
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - requestStartedAt;
+    const statusLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+
+    appLog(statusLevel, 'request_end', `${req.method} ${req.originalUrl} -> ${res.statusCode}`, {
+      request_id: requestId,
+      module: moduleName,
+      method: req.method,
+      path: req.path,
+      status_code: res.statusCode,
+      duration_ms: durationMs,
+      user_id: req.userId || null
+    });
+  });
+
+  next();
+});
 
 // ===== DATABASE INITIALIZATION =====
 async function ensureDemoUser() {
@@ -707,6 +1007,11 @@ const initializeDatabase = async () => {
     `);
 
     await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
@@ -908,7 +1213,45 @@ async function getUserRole(userId) {
   return roleResult.rows[0]?.name || 'viewer';
 }
 
-function buildMemoryUser({ id, email, passwordHash, fullName, company, department, phone, role = 'employee' }) {
+const ALLOWED_ROLE_NAMES = ['admin', 'manager', 'employee', 'viewer'];
+const ALLOWED_USER_STATUSES = ['active', 'inactive'];
+
+function normalizeRoleName(role) {
+  return String(role || '').trim().toLowerCase();
+}
+
+function isValidEmailAddress(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function normalizeUserStatus(status) {
+  return String(status || '').trim().toLowerCase();
+}
+
+function generateTemporaryPassword(length = 12) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  let output = '';
+  for (let i = 0; i < length; i += 1) {
+    output += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return output;
+}
+
+async function getUsersTableColumns() {
+  if (!databaseReady) {
+    return new Set(['email', 'password_hash', 'full_name', 'company', 'department', 'phone', 'status']);
+  }
+
+  const result = await pool.query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'users'`
+  );
+
+  return new Set(result.rows.map((row) => row.column_name));
+}
+
+function buildMemoryUser({ id, email, passwordHash, fullName, company, department, phone, role = 'employee', status = 'active', mustChangePassword = false }) {
   return {
     id,
     email,
@@ -920,7 +1263,8 @@ function buildMemoryUser({ id, email, passwordHash, fullName, company, departmen
     role,
     created_at: new Date().toISOString(),
     last_login: null,
-    status: 'active'
+    status,
+    must_change_password: Boolean(mustChangePassword)
   };
 }
 
@@ -1079,6 +1423,10 @@ async function loginHandler(req, res) {
         return sendError(res, 401, 'Invalid email or password', { code: 'INVALID_CREDENTIALS' });
       }
 
+      if (normalizeUserStatus(user.status) !== 'active') {
+        return sendError(res, 403, 'Account is inactive. Contact an administrator.', { code: 'ACCOUNT_INACTIVE' });
+      }
+
       user.last_login = new Date().toISOString();
       const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
 
@@ -1092,14 +1440,21 @@ async function loginHandler(req, res) {
           department: user.department,
           phone: user.phone,
           role: user.role,
+          must_change_password: Boolean(user.must_change_password),
           last_login: user.last_login
         },
         token
       });
     }
 
+    const usersColumns = await getUsersTableColumns();
+    const hasStatusColumn = usersColumns.has('status');
+    const hasMustChangePasswordColumn = usersColumns.has('must_change_password');
+
     const result = await pool.query(
       `SELECT id, email, full_name, company, phone, created_at, last_login,
+              ${hasStatusColumn ? 'status,' : `'active'::text AS status,`}
+              ${hasMustChangePasswordColumn ? 'must_change_password,' : 'false AS must_change_password,'}
               COALESCE(password_hash, to_jsonb(users)->>'password') AS password_value
        FROM users
        WHERE email = $1`,
@@ -1114,6 +1469,10 @@ async function loginHandler(req, res) {
     const isPasswordValid = await bcrypt.compare(password, user.password_value || '');
     if (!isPasswordValid) {
       return sendError(res, 401, 'Invalid email or password', { code: 'INVALID_CREDENTIALS' });
+    }
+
+    if (normalizeUserStatus(user.status) !== 'active') {
+      return sendError(res, 403, 'Account is inactive. Contact an administrator.', { code: 'ACCOUNT_INACTIVE' });
     }
 
     await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
@@ -1137,6 +1496,7 @@ async function loginHandler(req, res) {
         department: null,
         phone: user.phone,
         role,
+        must_change_password: Boolean(user.must_change_password),
         last_login: new Date().toISOString()
       },
       token
@@ -1167,10 +1527,16 @@ async function forgotPasswordHandler(req, res) {
       }
 
       const resetToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+      const delivery = await sendPasswordResetEmail({ toEmail: normalizedEmail, resetToken });
       return res.json({
-        message: 'Password reset token generated',
-        resetToken,
-        note: 'In production, this should be sent via email'
+        message: delivery.delivered ? 'Password reset email sent' : 'Password reset token generated',
+        ...(delivery.delivered
+          ? {}
+          : {
+              resetToken,
+              resetUrl: delivery.resetUrl,
+              note: 'SMTP not configured; token returned for local development'
+            })
       });
     }
 
@@ -1180,11 +1546,17 @@ async function forgotPasswordHandler(req, res) {
     }
 
     const resetToken = jwt.sign({ userId: result.rows[0].id }, JWT_SECRET, { expiresIn: '1h' });
+    const delivery = await sendPasswordResetEmail({ toEmail: email, resetToken });
 
     res.json({
-      message: 'Password reset token generated',
-      resetToken,
-      note: 'In production, this should be sent via email'
+      message: delivery.delivered ? 'Password reset email sent' : 'Password reset token generated',
+      ...(delivery.delivered
+        ? {}
+        : {
+            resetToken,
+            resetUrl: delivery.resetUrl,
+            note: 'SMTP not configured; token returned for local development'
+          })
     });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -1213,11 +1585,21 @@ async function resetPasswordHandler(req, res) {
         return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
       }
       user.password_hash = hashedPassword;
+      user.must_change_password = false;
       return res.json({ message: 'Password reset successfully' });
     }
 
+    const usersColumns = await getUsersTableColumns();
+    const passwordColumn = usersColumns.has('password_hash') ? 'password_hash' : 'password';
+    const updateColumns = [`${passwordColumn} = $1`, 'updated_at = CURRENT_TIMESTAMP'];
+    if (usersColumns.has('must_change_password')) {
+      updateColumns.push('must_change_password = false');
+    }
+
     await pool.query(
-      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      `UPDATE users
+       SET ${updateColumns.join(', ')}
+       WHERE id = $2`,
       [hashedPassword, decoded.userId]
     );
 
@@ -1262,11 +1644,68 @@ const verifyToken = (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.userId = decoded.userId;
     req.userRole = decoded.role;
+    req.userEmail = decoded.email || null;
     next();
   } catch (err) {
     return sendError(res, 401, 'Invalid or expired token', { code: 'TOKEN_INVALID' });
   }
 };
+
+async function getEmployeeIdForUser(userId, userEmail = null) {
+  if (!databaseReady) {
+    const byUserId = memoryStore.employees.find((entry) => Number(entry.user_id) === Number(userId));
+    if (byUserId) return byUserId.id;
+
+    const email = String(userEmail || '').toLowerCase();
+    if (!email) return null;
+
+    const byEmail = memoryStore.employees.find((entry) => String(entry.email || '').toLowerCase() === email);
+    return byEmail?.id || null;
+  }
+
+  const result = await pool.query(
+    `SELECT e.id
+     FROM employees e
+     LEFT JOIN users u ON u.id = $1
+     WHERE e.user_id = $1
+        OR LOWER(e.email) = LOWER(COALESCE(u.email, $2))
+     ORDER BY CASE WHEN e.user_id = $1 THEN 0 ELSE 1 END
+     LIMIT 1`,
+    [userId, userEmail || null]
+  );
+
+  return result.rows[0]?.id || null;
+}
+
+async function getScopedEmployeeId(req) {
+  const role = req.userRole || (await getUserRole(req.userId));
+  req.userRole = role;
+
+  if (role !== 'employee') {
+    return undefined;
+  }
+
+  return getEmployeeIdForUser(req.userId, req.userEmail);
+}
+
+async function ensureEmployeeOwnsTarget(req, res, targetEmployeeId) {
+  const scopedEmployeeId = await getScopedEmployeeId(req);
+  if (scopedEmployeeId === undefined) {
+    return true;
+  }
+
+  if (!Number.isInteger(scopedEmployeeId) || scopedEmployeeId <= 0) {
+    sendError(res, 403, 'No employee profile is linked to this account', { code: 'EMPLOYEE_PROFILE_NOT_LINKED' });
+    return false;
+  }
+
+  if (Number(targetEmployeeId) !== Number(scopedEmployeeId)) {
+    sendError(res, 403, 'Forbidden - employees can only access their own records', { code: 'FORBIDDEN_SCOPE' });
+    return false;
+  }
+
+  return true;
+}
 
 const requireRoles = (...allowedRoles) => {
   return async (req, res, next) => {
@@ -1284,6 +1723,69 @@ const requireRoles = (...allowedRoles) => {
     }
   };
 };
+
+app.post('/api/auth/first-login-password', verifyToken, async (req, res) => {
+  try {
+    const { newPassword } = req.body || {};
+
+    if (!newPassword) {
+      return sendError(res, 400, 'New password is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (String(newPassword).length < 8) {
+      return sendError(res, 400, 'Password must be at least 8 characters', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return sendError(res, 400, 'Password must include uppercase, lowercase, and numeric characters', { code: 'VALIDATION_ERROR' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    if (!databaseReady) {
+      const user = memoryStore.users.find((entry) => entry.id === req.userId);
+      if (!user) {
+        return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
+      }
+
+      user.password_hash = hashedPassword;
+      user.must_change_password = false;
+
+      await logAuditAction(req.userId, 'first_login_password_updated', 'user', req.userId, { email: user.email });
+
+      return res.json({ message: 'Password updated successfully. You can now continue to dashboard.' });
+    }
+
+    const usersColumns = await getUsersTableColumns();
+    const passwordColumn = usersColumns.has('password_hash') ? 'password_hash' : 'password';
+
+    const updateColumns = [`${passwordColumn} = $1`, 'updated_at = CURRENT_TIMESTAMP'];
+    if (usersColumns.has('must_change_password')) {
+      updateColumns.push('must_change_password = false');
+    }
+
+    const updateResult = await pool.query(
+      `UPDATE users
+       SET ${updateColumns.join(', ')}
+       WHERE id = $2
+       RETURNING id, email`,
+      [hashedPassword, req.userId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
+    }
+
+    await logAuditAction(req.userId, 'first_login_password_updated', 'user', req.userId, {
+      email: updateResult.rows[0].email
+    });
+
+    res.json({ message: 'Password updated successfully. You can now continue to dashboard.' });
+  } catch (err) {
+    console.error('First-login password update error:', err);
+    res.status(500).json({ error: 'Failed to update password' });
+  }
+});
 
 app.get('/api/admin/summary', verifyToken, requireRoles('admin'), async (req, res) => {
   try {
@@ -1469,6 +1971,319 @@ app.get('/api/admin/users', verifyToken, requireRoles('admin'), async (req, res)
   } catch (err) {
     console.error('Error loading users:', err);
     res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
+app.get('/api/admin/roles', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    if (!databaseReady) {
+      return res.json({ message: 'Roles loaded successfully', data: ALLOWED_ROLE_NAMES });
+    }
+
+    const result = await pool.query('SELECT name FROM roles ORDER BY name ASC');
+    const roles = result.rows.map((row) => normalizeRoleName(row.name)).filter(Boolean);
+
+    res.json({
+      message: 'Roles loaded successfully',
+      data: roles.length > 0 ? roles : ALLOWED_ROLE_NAMES
+    });
+  } catch (err) {
+    console.error('Error loading roles:', err);
+    res.status(500).json({ error: 'Failed to load roles' });
+  }
+});
+
+app.post('/api/admin/users', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const suppliedPassword = String(req.body?.password || '');
+    const autoGeneratePassword = Boolean(req.body?.autoGeneratePassword);
+    const password = autoGeneratePassword ? generateTemporaryPassword(12) : suppliedPassword;
+    const fullName = String(req.body?.fullName || '').trim();
+    const company = String(req.body?.company || '').trim();
+    const department = String(req.body?.department || '').trim();
+    const phone = String(req.body?.phone || '').trim();
+    const role = normalizeRoleName(req.body?.role || 'employee');
+    const mustChangePassword = req.body?.mustChangePassword === undefined ? true : Boolean(req.body?.mustChangePassword);
+
+    if (!email || !password) {
+      return sendError(res, 400, 'Email and password are required', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (!isValidEmailAddress(email)) {
+      return sendError(res, 400, 'A valid email address is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (password.length < 8) {
+      return sendError(res, 400, 'Password must be at least 8 characters', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (!ALLOWED_ROLE_NAMES.includes(role)) {
+      return sendError(res, 400, 'Invalid role supplied', { code: 'INVALID_ROLE' });
+    }
+
+    if (!databaseReady) {
+      const existingUser = memoryStore.users.find((entry) => entry.email.toLowerCase() === email);
+      if (existingUser) {
+        return sendError(res, 400, 'Email already registered', { code: 'EMAIL_EXISTS' });
+      }
+
+      const id = memoryStore.users.length > 0 ? Math.max(...memoryStore.users.map((entry) => entry.id)) + 1 : 1;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = buildMemoryUser({
+        id,
+        email,
+        passwordHash: hashedPassword,
+        fullName: fullName || null,
+        company: company || null,
+        department: department || null,
+        phone: phone || null,
+        role,
+        mustChangePassword,
+        status: 'active'
+      });
+      memoryStore.users.push(user);
+
+      await logAuditAction(req.userId, 'admin_create_user', 'user', user.id, { email: user.email, role });
+
+      return res.status(201).json({
+        message: 'User created successfully',
+        data: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          company: user.company,
+          department: user.department,
+          phone: user.phone,
+          role: user.role,
+          status: user.status,
+          must_change_password: Boolean(user.must_change_password)
+        },
+        temporaryPassword: password
+      });
+    }
+
+    const existingResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [email]);
+    if (existingResult.rows.length > 0) {
+      return sendError(res, 400, 'Email already registered', { code: 'EMAIL_EXISTS' });
+    }
+
+    const usersColumns = await getUsersTableColumns();
+    const passwordColumn = usersColumns.has('password_hash') ? 'password_hash' : 'password';
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const insertColumns = ['email', passwordColumn, 'full_name', 'company', 'phone'];
+    const insertValues = [email, hashedPassword, fullName || null, company || null, phone || null];
+
+    if (usersColumns.has('department')) {
+      insertColumns.push('department');
+      insertValues.push(department || null);
+    }
+
+    if (usersColumns.has('status')) {
+      insertColumns.push('status');
+      insertValues.push('active');
+    }
+
+    if (usersColumns.has('must_change_password')) {
+      insertColumns.push('must_change_password');
+      insertValues.push(mustChangePassword);
+    }
+
+    const placeholders = insertColumns.map((_, index) => `$${index + 1}`).join(', ');
+    const result = await pool.query(
+      `INSERT INTO users (${insertColumns.join(', ')})
+       VALUES (${placeholders})
+       RETURNING id, email, full_name, company, phone${usersColumns.has('department') ? ', department' : ''}${usersColumns.has('status') ? ', status' : ''}`,
+      insertValues
+    );
+
+    const user = result.rows[0];
+    const roleResult = await pool.query('SELECT id FROM roles WHERE name = $1 LIMIT 1', [role]);
+    if (roleResult.rows.length === 0) {
+      return sendError(res, 400, 'Role does not exist in roles table', { code: 'INVALID_ROLE' });
+    }
+
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role_id, assigned_by)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, role_id) DO NOTHING`,
+      [user.id, roleResult.rows[0].id, req.userId]
+    );
+
+    await logAuditAction(req.userId, 'admin_create_user', 'user', user.id, { email: user.email, role });
+
+    res.status(201).json({
+      message: 'User created successfully',
+      data: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        company: user.company,
+        department: user.department || null,
+        phone: user.phone,
+        role,
+        status: user.status || 'active',
+        must_change_password: usersColumns.has('must_change_password') ? mustChangePassword : false
+      },
+      temporaryPassword: password
+    });
+  } catch (err) {
+    console.error('Error creating user by admin:', err);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+app.put('/api/admin/users/:id/role', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const role = normalizeRoleName(req.body?.role);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return sendError(res, 400, 'Valid user id is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (!ALLOWED_ROLE_NAMES.includes(role)) {
+      return sendError(res, 400, 'Invalid role supplied', { code: 'INVALID_ROLE' });
+    }
+
+    if (!databaseReady) {
+      const user = memoryStore.users.find((entry) => entry.id === userId);
+      if (!user) {
+        return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
+      }
+
+      const previousRole = user.role;
+      user.role = role;
+
+      await logAuditAction(req.userId, 'admin_update_user_role', 'user', user.id, {
+        email: user.email,
+        from_role: previousRole,
+        to_role: role
+      });
+
+      return res.json({
+        message: 'User role updated successfully',
+        data: {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        }
+      });
+    }
+
+    const userResult = await pool.query('SELECT id, email FROM users WHERE id = $1 LIMIT 1', [userId]);
+    if (userResult.rows.length === 0) {
+      return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
+    }
+
+    const previousRole = await getUserRole(userId);
+    const roleResult = await pool.query('SELECT id, name FROM roles WHERE name = $1 LIMIT 1', [role]);
+    if (roleResult.rows.length === 0) {
+      return sendError(res, 400, 'Role does not exist in roles table', { code: 'INVALID_ROLE' });
+    }
+
+    await pool.query('DELETE FROM user_roles WHERE user_id = $1', [userId]);
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role_id, assigned_by)
+       VALUES ($1, $2, $3)`,
+      [userId, roleResult.rows[0].id, req.userId]
+    );
+
+    await logAuditAction(req.userId, 'admin_update_user_role', 'user', userId, {
+      email: userResult.rows[0].email,
+      from_role: previousRole,
+      to_role: role
+    });
+
+    res.json({
+      message: 'User role updated successfully',
+      data: {
+        id: userId,
+        email: userResult.rows[0].email,
+        role
+      }
+    });
+  } catch (err) {
+    console.error('Error updating user role by admin:', err);
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+});
+
+app.put('/api/admin/users/:id/status', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const status = normalizeUserStatus(req.body?.status);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return sendError(res, 400, 'Valid user id is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (!ALLOWED_USER_STATUSES.includes(status)) {
+      return sendError(res, 400, 'Invalid status supplied', { code: 'INVALID_STATUS' });
+    }
+
+    if (!databaseReady) {
+      const user = memoryStore.users.find((entry) => entry.id === userId);
+      if (!user) {
+        return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
+      }
+
+      const previousStatus = user.status || 'active';
+      user.status = status;
+
+      await logAuditAction(req.userId, 'admin_update_user_status', 'user', user.id, {
+        email: user.email,
+        from_status: previousStatus,
+        to_status: status
+      });
+
+      return res.json({
+        message: 'User status updated successfully',
+        data: {
+          id: user.id,
+          email: user.email,
+          status: user.status
+        }
+      });
+    }
+
+    const usersColumns = await getUsersTableColumns();
+    if (!usersColumns.has('status')) {
+      return sendError(res, 500, 'Users table does not support status updates', { code: 'SCHEMA_NOT_SUPPORTED' });
+    }
+
+    const userResult = await pool.query('SELECT id, email, status FROM users WHERE id = $1 LIMIT 1', [userId]);
+    if (userResult.rows.length === 0) {
+      return sendError(res, 404, 'User not found', { code: 'USER_NOT_FOUND' });
+    }
+
+    const previousStatus = normalizeUserStatus(userResult.rows[0].status || 'active');
+    await pool.query(
+      `UPDATE users
+       SET status = $1,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [status, userId]
+    );
+
+    await logAuditAction(req.userId, 'admin_update_user_status', 'user', userId, {
+      email: userResult.rows[0].email,
+      from_status: previousStatus,
+      to_status: status
+    });
+
+    res.json({
+      message: 'User status updated successfully',
+      data: {
+        id: userId,
+        email: userResult.rows[0].email,
+        status
+      }
+    });
+  } catch (err) {
+    console.error('Error updating user status by admin:', err);
+    res.status(500).json({ error: 'Failed to update user status' });
   }
 });
 
@@ -1688,9 +2503,18 @@ app.get('/api/employees', verifyToken, async (req, res) => {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
     const offset = (page - 1) * limit;
+    const scopedEmployeeId = await getScopedEmployeeId(req);
+
+    if (req.userRole === 'employee' && (!Number.isInteger(scopedEmployeeId) || scopedEmployeeId <= 0)) {
+      return sendError(res, 403, 'No employee profile is linked to this account', { code: 'EMPLOYEE_PROFILE_NOT_LINKED' });
+    }
 
     if (!databaseReady) {
       let rows = [...memoryStore.employees];
+
+      if (Number.isInteger(scopedEmployeeId)) {
+        rows = rows.filter((row) => Number(row.id) === Number(scopedEmployeeId));
+      }
 
       if (req.query.status) {
         rows = rows.filter((row) => row.status === req.query.status);
@@ -1745,6 +2569,11 @@ app.get('/api/employees', verifyToken, async (req, res) => {
     if (req.query.manager_id) {
       params.push(parseInt(req.query.manager_id, 10));
       filters.push(`e.manager_id = $${params.length}`);
+    }
+
+    if (Number.isInteger(scopedEmployeeId)) {
+      params.push(scopedEmployeeId);
+      filters.push(`e.id = $${params.length}`);
     }
 
     if (req.query.q) {
@@ -1812,13 +2641,23 @@ app.get('/api/employees', verifyToken, async (req, res) => {
 
 app.get('/api/employees/search', verifyToken, async (req, res) => {
   try {
+    const scopedEmployeeId = await getScopedEmployeeId(req);
+    if (req.userRole === 'employee' && (!Number.isInteger(scopedEmployeeId) || scopedEmployeeId <= 0)) {
+      return sendError(res, 403, 'No employee profile is linked to this account', { code: 'EMPLOYEE_PROFILE_NOT_LINKED' });
+    }
+
     if (!databaseReady) {
       const q = String(req.query.q || '').trim();
       if (!q) {
         return res.status(400).json({ error: 'Search query q is required' });
       }
 
-      const rows = memoryStore.employees.filter((row) => {
+      let rows = memoryStore.employees;
+      if (Number.isInteger(scopedEmployeeId)) {
+        rows = rows.filter((row) => Number(row.id) === Number(scopedEmployeeId));
+      }
+
+      rows = rows.filter((row) => {
         const haystack = [row.first_name, row.last_name, row.email, row.job_title, row.department_name].filter(Boolean).join(' ').toLowerCase();
         return haystack.includes(q.toLowerCase());
       }).slice(0, 50);
@@ -1831,6 +2670,14 @@ app.get('/api/employees/search', verifyToken, async (req, res) => {
     }
 
     const search = `%${q}%`;
+    const roleScopedFilter = Number.isInteger(scopedEmployeeId)
+      ? ` AND (
+           e.first_name ILIKE $1
+           OR e.last_name ILIKE $1
+           OR e.email ILIKE $1
+           OR COALESCE(e.job_title, '') ILIKE $1
+         ) AND e.id = $2`
+      : '';
     const result = await pool.query(
       `SELECT
          e.id,
@@ -1842,13 +2689,15 @@ app.get('/api/employees/search', verifyToken, async (req, res) => {
          d.name AS department_name
        FROM employees e
        LEFT JOIN departments d ON d.id = e.department_id
-       WHERE e.first_name ILIKE $1
-          OR e.last_name ILIKE $1
-          OR e.email ILIKE $1
-          OR COALESCE(e.job_title, '') ILIKE $1
+       WHERE ${Number.isInteger(scopedEmployeeId)
+        ? '1=1'
+        : `e.first_name ILIKE $1
+         OR e.last_name ILIKE $1
+         OR e.email ILIKE $1
+         OR COALESCE(e.job_title, '') ILIKE $1`}${roleScopedFilter}
        ORDER BY e.first_name ASC, e.last_name ASC
        LIMIT 50`,
-      [search]
+      Number.isInteger(scopedEmployeeId) ? [search, scopedEmployeeId] : [search]
     );
 
     res.json({ data: result.rows });
@@ -1863,6 +2712,10 @@ app.get('/api/employees/:id', verifyToken, async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (!Number.isInteger(id) || id <= 0) {
       return sendError(res, 400, 'Invalid employee id', { code: 'INVALID_EMPLOYEE_ID' });
+    }
+
+    if (!(await ensureEmployeeOwnsTarget(req, res, id))) {
+      return;
     }
 
     if (!databaseReady) {
@@ -2465,9 +3318,18 @@ app.get('/api/permits', verifyToken, async (req, res) => {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
     const offset = (page - 1) * limit;
+    const scopedEmployeeId = await getScopedEmployeeId(req);
+
+    if (req.userRole === 'employee' && (!Number.isInteger(scopedEmployeeId) || scopedEmployeeId <= 0)) {
+      return sendError(res, 403, 'No employee profile is linked to this account', { code: 'EMPLOYEE_PROFILE_NOT_LINKED' });
+    }
 
     if (!databaseReady) {
       let rows = [...memoryStore.permits];
+
+      if (Number.isInteger(scopedEmployeeId)) {
+        rows = rows.filter((row) => Number(row.submitted_by) === Number(scopedEmployeeId));
+      }
 
       if (req.query.status) {
         rows = rows.filter((row) => row.status === req.query.status);
@@ -2518,6 +3380,11 @@ app.get('/api/permits', verifyToken, async (req, res) => {
         OR COALESCE(location, '') ILIKE $${params.length}
         OR COALESCE(description, '') ILIKE $${params.length}
       )`);
+    }
+
+    if (Number.isInteger(scopedEmployeeId)) {
+      params.push(scopedEmployeeId);
+      filters.push(`submitted_by = $${params.length}`);
     }
 
     const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
@@ -2576,14 +3443,23 @@ app.get('/api/permits/:id', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid permit id' });
     }
 
+    const scopedEmployeeId = await getScopedEmployeeId(req);
+    if (req.userRole === 'employee' && (!Number.isInteger(scopedEmployeeId) || scopedEmployeeId <= 0)) {
+      return sendError(res, 403, 'No employee profile is linked to this account', { code: 'EMPLOYEE_PROFILE_NOT_LINKED' });
+    }
+
     if (!databaseReady) {
       const permit = memoryStore.permits.find((entry) => entry.id === id);
       if (!permit) {
         return res.status(404).json({ error: 'Permit not found' });
       }
+      if (Number.isInteger(scopedEmployeeId) && Number(permit.submitted_by) !== Number(scopedEmployeeId)) {
+        return sendError(res, 403, 'Forbidden - employees can only access their own records', { code: 'FORBIDDEN_SCOPE' });
+      }
       return res.json(permit);
     }
 
+    const roleScopeSql = Number.isInteger(scopedEmployeeId) ? ' AND p.submitted_by = $2' : '';
     const result = await pool.query(
       `SELECT
          p.id,
@@ -2606,8 +3482,8 @@ app.get('/api/permits/:id', verifyToken, async (req, res) => {
        FROM permit_records p
        LEFT JOIN employees e ON e.id = p.submitted_by
        LEFT JOIN employees a ON a.id = p.approver_id
-       WHERE p.id = $1`,
-      [id]
+       WHERE p.id = $1${roleScopeSql}`,
+      Number.isInteger(scopedEmployeeId) ? [id, scopedEmployeeId] : [id]
     );
 
     if (result.rows.length === 0) {
@@ -2714,6 +3590,11 @@ app.put('/api/permits/:id', verifyToken, requireRoles('admin', 'manager', 'emplo
       return res.status(400).json({ error: 'Invalid permit id' });
     }
 
+    const scopedEmployeeId = await getScopedEmployeeId(req);
+    if (req.userRole === 'employee' && (!Number.isInteger(scopedEmployeeId) || scopedEmployeeId <= 0)) {
+      return sendError(res, 403, 'No employee profile is linked to this account', { code: 'EMPLOYEE_PROFILE_NOT_LINKED' });
+    }
+
     const allowedFields = [
       'permit_type',
       'title',
@@ -2759,8 +3640,18 @@ app.put('/api/permits/:id', verifyToken, requireRoles('admin', 'manager', 'emplo
       if (!permit) {
         return res.status(404).json({ error: 'Permit not found' });
       }
+      if (Number.isInteger(scopedEmployeeId) && Number(permit.submitted_by) !== Number(scopedEmployeeId)) {
+        return sendError(res, 403, 'Forbidden - employees can only update their own records', { code: 'FORBIDDEN_SCOPE' });
+      }
       Object.assign(permit, updateFields, { updated_at: new Date().toISOString() });
       return res.json({ message: 'Permit updated successfully', data: permit });
+    }
+
+    if (Number.isInteger(scopedEmployeeId)) {
+      const ownedPermit = await pool.query('SELECT id FROM permit_records WHERE id = $1 AND submitted_by = $2', [id, scopedEmployeeId]);
+      if (ownedPermit.rows.length === 0) {
+        return sendError(res, 403, 'Forbidden - employees can only update their own records', { code: 'FORBIDDEN_SCOPE' });
+      }
     }
 
     const assignments = [];
@@ -4158,6 +5049,10 @@ app.get('/api/employees/:id/compliance', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid employee id' });
     }
 
+    if (!(await ensureEmployeeOwnsTarget(req, res, employeeId))) {
+      return;
+    }
+
     const employeeResult = await pool.query(
       `SELECT id, first_name, last_name, email, compliance_score, status
        FROM employees
@@ -4224,6 +5119,10 @@ app.get('/api/employees/:id/training', verifyToken, async (req, res) => {
     const employeeId = parseInt(req.params.id, 10);
     if (!Number.isInteger(employeeId) || employeeId <= 0) {
       return res.status(400).json({ error: 'Invalid employee id' });
+    }
+
+    if (!(await ensureEmployeeOwnsTarget(req, res, employeeId))) {
+      return;
     }
 
     const employeeResult = await pool.query(
@@ -4356,6 +5255,10 @@ app.get('/api/employees/:id/onboard', verifyToken, async (req, res) => {
     const employeeId = parseInt(req.params.id, 10);
     if (!Number.isInteger(employeeId) || employeeId <= 0) {
       return res.status(400).json({ error: 'Invalid employee id' });
+    }
+
+    if (!(await ensureEmployeeOwnsTarget(req, res, employeeId))) {
+      return;
     }
 
     const checklistResult = await pool.query(
@@ -4930,14 +5833,64 @@ definePath('/api/login', {
       }
     },
     responses: {
-      200: { description: 'OK' },
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' },
+                token: { type: 'string' },
+                user: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'integer' },
+                    email: { type: 'string', format: 'email' },
+                    role: { type: 'string' },
+                    must_change_password: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       400: { description: 'Bad request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      403: { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
     }
   }
 });
 definePath('/api/auth/login', apiDoc.paths['/api/login']);
+definePath('/api/auth/first-login-password', {
+  post: {
+    tags: ['Auth'],
+    summary: 'Update password after first login',
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['newPassword'],
+            properties: {
+              newPassword: { type: 'string' }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: { description: 'OK' },
+      400: { description: 'Bad request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    }
+  }
+});
 definePath('/api/forgot-password', {
   post: {
     tags: ['Auth'],
@@ -5960,6 +6913,112 @@ definePath('/api/admin/users', {
       401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
     }
+  },
+  post: {
+    tags: ['Admin'],
+    summary: 'Create a new user and assign an initial role',
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['email', 'password'],
+            properties: {
+              email: { type: 'string', format: 'email' },
+              password: { type: 'string' },
+              autoGeneratePassword: { type: 'boolean' },
+              fullName: { type: 'string' },
+              company: { type: 'string' },
+              department: { type: 'string' },
+              phone: { type: 'string' },
+              mustChangePassword: { type: 'boolean' },
+              role: { type: 'string', enum: ['admin', 'manager', 'employee', 'viewer'] }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      201: { description: 'Created' },
+      400: { description: 'Bad request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    }
+  }
+});
+
+definePath('/api/admin/roles', {
+  get: {
+    tags: ['Admin'],
+    summary: 'Get available roles',
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    }
+  }
+});
+
+definePath('/api/admin/users/{id}/role', {
+  put: {
+    tags: ['Admin'],
+    summary: 'Update a user role',
+    parameters: [
+      { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['role'],
+            properties: {
+              role: { type: 'string', enum: ['admin', 'manager', 'employee', 'viewer'] }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: { description: 'OK' },
+      400: { description: 'Bad request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    }
+  }
+});
+
+definePath('/api/admin/users/{id}/status', {
+  put: {
+    tags: ['Admin'],
+    summary: 'Activate or deactivate a user',
+    parameters: [
+      { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['status'],
+            properties: {
+              status: { type: 'string', enum: ['active', 'inactive'] }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: { description: 'OK' },
+      400: { description: 'Bad request', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      500: { description: 'Server error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    }
   }
 });
 
@@ -6532,10 +7591,35 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(apiDoc, {
   customSiteTitle: 'EHS Suite API Docs'
 }));
 
+app.use((err, req, res, next) => {
+  const moduleName = req?.logContext?.module || getModuleFromPath(req?.path);
+  const requestId = req?.logContext?.requestId || null;
+
+  appLog('error', 'express_error', 'Unhandled Express error', {
+    request_id: requestId,
+    module: moduleName,
+    method: req?.method,
+    path: req?.path,
+    status_code: err?.status || 500,
+    error: err?.message,
+    stack: err?.stack
+  });
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return sendError(res, err?.status || 500, 'Internal server error', {
+    code: 'INTERNAL_ERROR',
+    details: isProduction ? undefined : err?.message
+  });
+});
+
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`EHS Suite Backend is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  appLog('info', 'startup', `EHS Suite Backend is running on port ${PORT}`, {
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 let isShuttingDown = false;
@@ -6546,26 +7630,42 @@ const shutdown = async (signal) => {
   }
 
   isShuttingDown = true;
-  console.log(`Received ${signal}. Starting graceful shutdown...`);
+  appLog('warn', 'shutdown', `Received ${signal}. Starting graceful shutdown.`);
 
   server.close(async () => {
     try {
       await pool.end();
-      console.log('PostgreSQL pool closed. Shutdown complete.');
+      appLog('info', 'shutdown', 'PostgreSQL pool closed. Shutdown complete.');
       process.exit(0);
     } catch (error) {
-      console.error('Error while closing PostgreSQL pool:', error);
+      appLog('error', 'shutdown', 'Error while closing PostgreSQL pool', {
+        error: error.message,
+        stack: error.stack
+      });
       process.exit(1);
     }
   });
 
   setTimeout(() => {
-    console.error('Forced shutdown after timeout.');
+    appLog('error', 'shutdown', 'Forced shutdown after timeout.');
     process.exit(1);
   }, 10000).unref();
 };
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+process.on('uncaughtException', (error) => {
+  appLog('error', 'uncaught_exception', 'Uncaught exception in process', {
+    error: error.message,
+    stack: error.stack
+  });
+});
+
+process.on('unhandledRejection', (reason) => {
+  appLog('error', 'unhandled_rejection', 'Unhandled promise rejection in process', {
+    reason: String(reason)
+  });
+});
 
 module.exports = app;

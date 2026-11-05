@@ -40,6 +40,35 @@ function setLog(id, value) {
   target.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
+function getTrainingRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.enrollments)) return payload.enrollments;
+  if (Array.isArray(payload?.data?.enrollments)) return payload.data.enrollments;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+function getComplianceRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.records)) return payload.records;
+  if (Array.isArray(payload?.data?.records)) return payload.data.records;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+function getOnboardingTasks(payload) {
+  if (Array.isArray(payload?.tasks)) return payload.tasks;
+  if (Array.isArray(payload?.data?.tasks)) return payload.data.tasks;
+  return [];
+}
+
+function getPermitRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.records)) return payload.records;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
 function toIntOrNull(v) {
   if (v === '' || v === null || v === undefined) return null;
   const n = parseInt(v, 10);
@@ -62,6 +91,99 @@ function renderDepartments(rows) {
   rows.forEach((r) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${r.id}</td><td>${r.name}</td><td>${r.manager_name || ''}</td><td>${r.employee_count || 0}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderTrainingRows(rows) {
+  const body = document.getElementById('trainingBody');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="5">No training records found.</td></tr>';
+    return;
+  }
+
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id ?? ''}</td>
+      <td>${row.course_name || row.course_id || ''}</td>
+      <td>${row.status ?? ''}</td>
+      <td>${row.final_score ?? ''}</td>
+      <td>${row.completion_date ? new Date(row.completion_date).toLocaleDateString() : ''}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderComplianceRows(rows) {
+  const body = document.getElementById('complianceBody');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="5">No compliance records found.</td></tr>';
+    return;
+  }
+
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id ?? ''}</td>
+      <td>${row.template_name || row.template_id || ''}</td>
+      <td>${row.status ?? ''}</td>
+      <td>${row.due_date ? new Date(row.due_date).toLocaleDateString() : ''}</td>
+      <td>${row.completed_date ? new Date(row.completed_date).toLocaleDateString() : ''}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderPermits(rows) {
+  const body = document.getElementById('permitBody');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="6">No permit records found.</td></tr>';
+    return;
+  }
+
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id ?? ''}</td>
+      <td>${row.permit_type ?? ''}</td>
+      <td>${row.title ?? ''}</td>
+      <td>${row.status ?? ''}</td>
+      <td>${row.site ?? ''}</td>
+      <td>${row.location ?? ''}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderOnboardingTasks(rows) {
+  const body = document.getElementById('onboardingBody');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="5">No onboarding tasks found.</td></tr>';
+    return;
+  }
+
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id ?? ''}</td>
+      <td>${row.step_number ?? ''}</td>
+      <td>${row.task_name ?? ''}</td>
+      <td>${row.completed ? 'Yes' : 'No'}</td>
+      <td>${row.completed_date ? new Date(row.completed_date).toLocaleDateString() : ''}</td>
+    `;
     body.appendChild(tr);
   });
 }
@@ -122,7 +244,8 @@ async function saveTraining() {
   }
 
   const result = await apiPost(`/api/employees/${employeeId}/training`, payload);
-  setLog('trainingLog', result);
+  setLog('trainingLog', `Training record created for employee ${employeeId}.`);
+  await viewTraining();
 }
 
 async function viewTraining() {
@@ -131,7 +254,9 @@ async function viewTraining() {
     throw new Error('Employee ID is required');
   }
   const result = await apiGet(`/api/employees/${employeeId}/training`);
-  setLog('trainingLog', result);
+  const rows = getTrainingRows(result);
+  renderTrainingRows(rows);
+  setLog('trainingLog', `Loaded ${rows.length} training record(s) for employee ${employeeId}.`);
 }
 
 async function createCompliance() {
@@ -148,7 +273,8 @@ async function createCompliance() {
   }
 
   const result = await apiPost(`/api/employees/${employeeId}/compliance`, payload);
-  setLog('complianceLog', result);
+  setLog('complianceLog', `Compliance record created for employee ${employeeId}.`);
+  await viewCompliance();
 }
 
 async function viewCompliance() {
@@ -157,7 +283,9 @@ async function viewCompliance() {
     throw new Error('Employee ID is required');
   }
   const result = await apiGet(`/api/employees/${employeeId}/compliance`);
-  setLog('complianceLog', result);
+  const rows = getComplianceRows(result);
+  renderComplianceRows(rows);
+  setLog('complianceLog', `Loaded ${rows.length} compliance record(s) for employee ${employeeId}.`);
 }
 
 async function startOnboarding() {
@@ -172,7 +300,8 @@ async function startOnboarding() {
   };
 
   const result = await apiPost(`/api/employees/${employeeId}/onboard`, payload);
-  setLog('onboardingLog', result);
+  renderOnboardingTasks([]);
+  setLog('onboardingLog', `Onboarding checklist started for employee ${employeeId}.`);
 }
 
 async function getOnboarding() {
@@ -181,7 +310,9 @@ async function getOnboarding() {
     throw new Error('Employee ID is required');
   }
   const result = await apiGet(`/api/employees/${employeeId}/onboard`);
-  setLog('onboardingLog', result);
+  const tasks = getOnboardingTasks(result);
+  renderOnboardingTasks(tasks);
+  setLog('onboardingLog', `Loaded onboarding status with ${tasks.length} task(s) for employee ${employeeId}.`);
 }
 
 async function completeStep() {
@@ -198,7 +329,66 @@ async function completeStep() {
   };
 
   const result = await apiPost(`/api/employees/${employeeId}/onboard/step`, payload);
-  setLog('onboardingLog', result);
+  setLog('onboardingLog', `Completed task ${taskId} for employee ${employeeId}.`);
+  await getOnboarding();
+}
+
+async function loadPermits() {
+  const result = await apiGet('/api/permits?limit=25');
+  const rows = getPermitRows(result);
+  renderPermits(rows);
+  setLog('permitLog', `Loaded ${rows.length} permit record(s).`);
+  return result;
+}
+
+async function createPermit() {
+  const payload = {
+    permit_type: document.getElementById('permitType').value,
+    title: document.getElementById('permitTitle').value.trim(),
+    description: document.getElementById('permitDescription').value.trim() || null,
+    site: document.getElementById('permitSite').value.trim() || null,
+    location: document.getElementById('permitLocation').value.trim() || null,
+    submitted_by: toIntOrNull(document.getElementById('permitSubmittedBy').value) || null,
+    status: document.getElementById('permitStatus').value,
+    approval_notes: document.getElementById('permitNotes').value.trim() || null
+  };
+
+  if (!payload.title) {
+    throw new Error('Permit title is required');
+  }
+
+  const result = await apiPost('/api/permits', payload);
+  setLog('permitLog', 'Permit created successfully.');
+  await loadPermits();
+  return result;
+}
+
+async function approvePermit() {
+  const permitId = toIntOrNull(document.getElementById('permitSubmittedBy').value);
+  if (!permitId) {
+    throw new Error('Use the selected permit ID in the permit title or a known permit ID');
+  }
+
+  const result = await apiPost(`/api/permits/${permitId}/approve`, {
+    approval_notes: document.getElementById('permitNotes').value.trim() || 'Approved by operations review'
+  });
+  setLog('permitLog', `Permit ${permitId} approved successfully.`);
+  await loadPermits();
+  return result;
+}
+
+async function rejectPermit() {
+  const permitId = toIntOrNull(document.getElementById('permitSubmittedBy').value);
+  if (!permitId) {
+    throw new Error('Use the selected permit ID in the permit title or a known permit ID');
+  }
+
+  const result = await apiPost(`/api/permits/${permitId}/reject`, {
+    approval_notes: document.getElementById('permitNotes').value.trim() || 'Rejected by reviewer'
+  });
+  setLog('permitLog', `Permit ${permitId} rejected successfully.`);
+  await loadPermits();
+  return result;
 }
 
 async function runAction(action, logTarget) {
@@ -226,10 +416,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('createComplianceBtn').addEventListener('click', () => runAction(createCompliance, 'complianceLog'));
   document.getElementById('viewComplianceBtn').addEventListener('click', () => runAction(viewCompliance, 'complianceLog'));
 
+  document.getElementById('createPermitBtn').addEventListener('click', () => runAction(createPermit, 'permitLog'));
+  document.getElementById('loadPermitsBtn').addEventListener('click', () => runAction(loadPermits, 'permitLog'));
+  document.getElementById('approvePermitBtn').addEventListener('click', () => runAction(approvePermit, 'permitLog'));
+  document.getElementById('rejectPermitBtn').addEventListener('click', () => runAction(rejectPermit, 'permitLog'));
+
   document.getElementById('startOnboardingBtn').addEventListener('click', () => runAction(startOnboarding, 'onboardingLog'));
   document.getElementById('getOnboardingBtn').addEventListener('click', () => runAction(getOnboarding, 'onboardingLog'));
   document.getElementById('completeStepBtn').addEventListener('click', () => runAction(completeStep, 'onboardingLog'));
 
   await runAction(loadEmployees);
   await runAction(loadDepartments);
+  await runAction(loadPermits, 'permitLog');
 });

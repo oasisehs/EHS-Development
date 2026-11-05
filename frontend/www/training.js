@@ -22,9 +22,22 @@ function setOutput(value) {
   out.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
+function getTrainingRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.enrollments)) return payload.enrollments;
+  if (Array.isArray(payload?.data?.enrollments)) return payload.data.enrollments;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
 function renderTable(rows) {
   const body = document.getElementById('trainingTable');
   body.innerHTML = '';
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="5">No training records found.</td></tr>';
+    return;
+  }
 
   rows.forEach((row) => {
     const tr = document.createElement('tr');
@@ -64,7 +77,7 @@ async function assignTraining() {
     throw new Error(data.error || 'Unable to save training record');
   }
 
-  setOutput(data);
+  setOutput('Training record saved successfully.');
   await loadTraining(employeeId);
 }
 
@@ -86,8 +99,9 @@ async function loadTraining(explicitEmployeeId) {
     throw new Error(data.error || 'Unable to load training history');
   }
 
-  setOutput(data);
-  renderTable(data.data || []);
+  const rows = getTrainingRows(data);
+  renderTable(rows);
+  setOutput(`Loaded ${rows.length} training record(s).`);
 }
 
 function withErrorHandling(action) {

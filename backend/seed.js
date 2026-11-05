@@ -80,15 +80,19 @@ async function seedUsers() {
       const result = await pool.query(
         `INSERT INTO users (email, password_hash, full_name, phone, company, status)
          VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (email) DO NOTHING
+         ON CONFLICT (email) DO UPDATE
+         SET password_hash = EXCLUDED.password_hash,
+             full_name = COALESCE(users.full_name, EXCLUDED.full_name),
+             phone = COALESCE(users.phone, EXCLUDED.phone),
+             company = COALESCE(users.company, EXCLUDED.company),
+             status = EXCLUDED.status,
+             updated_at = CURRENT_TIMESTAMP
          RETURNING id, email`,
         [user.email, user.password, user.full_name, user.phone, user.company, user.status]
       );
       
       if (result.rows.length > 0) {
-        console.log(`✅ Created user: ${user.email} (ID: ${result.rows[0].id})`);
-      } else {
-        console.log(`⚠️  User already exists: ${user.email}`);
+        console.log(`✅ Upserted user: ${user.email} (ID: ${result.rows[0].id})`);
       }
     } catch (error) {
       console.error(`❌ Error creating user ${user.email}:`, error.message);

@@ -20,6 +20,12 @@ function setLog(value) {
   target.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
+function getOnboardingTasks(payload) {
+  if (Array.isArray(payload?.tasks)) return payload.tasks;
+  if (Array.isArray(payload?.data?.tasks)) return payload.data.tasks;
+  return [];
+}
+
 function renderTasks(tasks) {
   const body = document.getElementById('tasksBody');
   body.innerHTML = '';
@@ -54,10 +60,10 @@ async function loadStatus(employeeId) {
     throw new Error(payload.error || 'Failed to load onboarding status');
   }
 
-  setLog(payload);
-  const tasks = payload.tasks || payload.data?.tasks || [];
+  const tasks = getOnboardingTasks(payload);
   renderTasks(tasks);
   updateProgress(tasks);
+  setLog(`Loaded onboarding status with ${tasks.length} task(s).`);
 }
 
 async function startOnboarding() {
@@ -83,7 +89,7 @@ async function startOnboarding() {
     throw new Error(data.error || 'Failed to start onboarding');
   }
 
-  setLog(data);
+  setLog('Onboarding checklist started successfully.');
   await loadStatus(employeeId);
 }
 
@@ -108,7 +114,7 @@ async function completeStep() {
     throw new Error(data.error || 'Failed to complete onboarding step');
   }
 
-  setLog(data);
+  setLog('Onboarding task marked as completed.');
   await loadStatus(employeeId);
 }
 
