@@ -1993,6 +1993,185 @@ app.get('/api/admin/roles', verifyToken, requireRoles('admin'), async (req, res)
   }
 });
 
+// Admin Database Inspection API
+app.get('/api/admin/db/inspect', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Database not ready', status: 'memory-store' });
+    }
+
+    // Get all tables in the database
+    const result = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      ORDER BY table_name ASC
+    `);
+
+    const tables = result.rows.map(row => row.table_name);
+
+    res.json({
+      status: 'connected',
+      database: 'postgres',
+      tables,
+      connection: {
+        host: pool._client?.host || 'unknown',
+        port: pool._client?.port || 5432,
+        database: pool._client?.database || 'unknown'
+      }
+    });
+  } catch (err) {
+    console.error('Error inspecting database:', err);
+    res.status(500).json({ error: 'Failed to inspect database', message: err.message });
+  }
+});
+
+// Get schema for a specific table
+app.get('/api/admin/db/schema/:tableName', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    const tableName = String(req.params.tableName || '').replace(/[^a-z0-9_]/gi, '');
+    
+    if (!tableName || tableName.length === 0) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
+
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Database not ready', status: 'memory-store' });
+    }
+
+    // Get table schema
+    const schemaResult = await pool.query(`
+      SELECT 
+        column_name, 
+        data_type, 
+        is_nullable, 
+        column_default 
+      FROM information_schema.columns 
+      WHERE table_name = $1 
+      ORDER BY ordinal_position ASC
+    `, [tableName]);
+
+    if (schemaResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Get row count
+    const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const rowCount = parseInt(countResult.rows[0].count, 10);
+
+    res.json({
+      tableName,
+      rowCount,
+      columns: schemaResult.rows
+    });
+  } catch (err) {
+    console.error('Error getting table schema:', err);
+    res.status(500).json({ error: 'Failed to get table schema', message: err.message });
+  }
+});
+
+// Get data from a specific table
+app.get('/api/admin/db/data/:tableName', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    const tableName = String(req.params.tableName || '').replace(/[^a-z0-9_]/gi, '');
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    
+    if (!tableName || tableName.length === 0) {
+      return res.status(400).json({ error: 'Invalid table name' });
+    }
+
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Database not ready', status: 'memory-store' });
+    }
+
+    // Get row count
+    const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const totalCount = parseInt(countResult.rows[0].count, 10);
+
+    // Get data with pagination
+    const dataResult = await pool.query(`
+      SELECT * FROM ${tableName} 
+      ORDER BY id ASC 
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      tableName,
+      totalCount,
+      limit,
+      offset,
+      data: dataResult.rows
+    });
+  } catch (err) {
+    console.error('Error getting table data:', err);
+    res.status(500).json({ error: 'Failed to get table data', message: err.message });
+  }
+});
+
+// Execute raw query (admin only, dangerous endpoint)
+app.post('/api/admin/db/query', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    const query = String(req.body?.query || '').trim();
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
+    }
+
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Database not ready', status: 'memory-store' });
+    }
+
+    // Only allow SELECT queries for safety
+    if (!query.toUpperCase().startsWith('SELECT')) {
+      return res.status(403).json({ error: 'Only SELECT queries are allowed' });
+    }
+
+    const result = await pool.query(query);
+
+    res.json({
+      success: true,
+      rowCount: result.rowCount,
+      data: result.rows
+    });
+  } catch (err) {
+    console.error('Error executing query:', err);
+    res.status(500).json({ error: 'Query execution failed', message: err.message });
+  }
+});
+
+// Seed database with demo data (admin only)
+app.post('/api/admin/db/seed', verifyToken, requireRoles('admin'), async (req, res) => {
+  try {
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Database not ready', status: 'memory-store' });
+    }
+
+    // Check if demo users already exist
+    const existingUsers = await pool.query(
+      `SELECT COUNT(*) as count FROM users WHERE email = $1`,
+      ['admin@ehssuite.com']
+    );
+
+    if (parseInt(existingUsers.rows[0].count, 10) > 0) {
+      return res.status(400).json({ error: 'Demo data already seeded', data: { message: 'Demo users already exist' } });
+    }
+
+    // Import and run the seed script
+    const seedScript = require('./seed.js');
+    const seedResult = await seedScript.runSeed();
+
+    res.json({
+      success: true,
+      message: 'Database seeded successfully',
+      data: seedResult
+    });
+  } catch (err) {
+    console.error('Error seeding database:', err);
+    res.status(500).json({ error: 'Database seeding failed', message: err.message });
+  }
+});
+
 app.post('/api/admin/users', verifyToken, requireRoles('admin'), async (req, res) => {
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();

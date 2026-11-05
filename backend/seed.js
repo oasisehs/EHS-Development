@@ -574,3 +574,43 @@ main().catch(error => {
   console.error('❌ Unexpected error:', error);
   process.exit(1);
 });
+
+// Export for use in server.js
+module.exports = {
+  runSeed: async function() {
+    try {
+      // Test connection
+      await pool.query('SELECT NOW()');
+      console.log('✅ Database connection successful\n');
+
+      // Run seed functions
+      await seedUsers();
+      await seedUserRoles();
+      await seedDepartments();
+      await seedEmployees();
+      await seedCourses();
+      await seedComplianceTemplates();
+      await seedAssets();
+      await seedKPIs();
+
+      console.log('\n🎉 Database seeding completed successfully!\n');
+      
+      return {
+        success: true,
+        message: 'Database seeded successfully',
+        users: [
+          { email: 'admin@ehssuite.com', password: 'demo123456' },
+          { email: 'manager@ehssuite.com', password: 'demo123456' },
+          { email: 'employee@ehssuite.com', password: 'demo123456' },
+          { email: 'safety@ehssuite.com', password: 'demo123456' }
+        ]
+      };
+    } catch (error) {
+      console.error('❌ Error during seeding:', error.message);
+      throw error;
+    } finally {
+      await pool.end();
+    }
+  }
+};
+
