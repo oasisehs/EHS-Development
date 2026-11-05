@@ -2140,6 +2140,45 @@ app.post('/api/admin/db/query', verifyToken, requireRoles('admin'), async (req, 
   }
 });
 
+// Bootstrap endpoint - seed database on first run (no auth required if database is empty)
+app.post('/api/bootstrap/seed', async (req, res) => {
+  try {
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Database not ready', status: 'memory-store' });
+    }
+
+    // Check if any users exist
+    const existingUsers = await pool.query(
+      `SELECT COUNT(*) as count FROM users`
+    );
+
+    const userCount = parseInt(existingUsers.rows[0].count, 10);
+
+    // Only allow unseeded bootstrap
+    if (userCount > 0) {
+      return res.status(403).json({ 
+        error: 'Bootstrap seed not allowed', 
+        message: 'Database already contains users. Use /api/admin/db/seed with admin authentication instead.',
+        userCount 
+      });
+    }
+
+    // Seed the database
+    const seedScript = require('./seed.js');
+    const seedResult = await seedScript.runSeed();
+
+    res.json({
+      success: true,
+      message: 'Database bootstrapped successfully',
+      userCount: seedResult.users || 0,
+      data: seedResult
+    });
+  } catch (err) {
+    console.error('Error bootstrapping database:', err);
+    res.status(500).json({ error: 'Database bootstrap failed', message: err.message });
+  }
+});
+
 // Seed database with demo data (admin only)
 app.post('/api/admin/db/seed', verifyToken, requireRoles('admin'), async (req, res) => {
   try {
